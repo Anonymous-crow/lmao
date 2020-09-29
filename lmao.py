@@ -1,5 +1,5 @@
 #from future import unicode_literals
-import os, base64, json, youtube_dl, pafy
+import os, base64, json, youtube_dl, pafy, threading
 
 def install_dependencies():
     os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
@@ -54,16 +54,42 @@ def download_video(url):
         print(i)
     pafy.new(url).getbest(preftype ="mp4").download()
 
-def download_playlist_mp3(url):
+def play_playlist(playlist_title=False, url=False):
     from playsound import playsound
+    if not playlist_title and not url:
+        return print('please pass a url or playlist title')
+    if playlist_title:
+        with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
+            playlist = json.load(file)
+            '''
+            int_playlist = {int(k) : v for k, v in playlist.items()}
+            playlist = sorted(playlist.items(), key=lambda item: int(item[0]))
+            print (playlist)
+            print (int_playlist)
+            '''
+        for i in playlist:
+            filename = playlist[i][1].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            print('Now playing: ' + playlist[i][0])
+            try:
+                playsound(os.path.join(playlist_title, filename))
+            except:
+                print("Something went wrong playing the file " + filename)
+
+
+def download_playlist_mp3(url, autoplay=False, overwrite=False):
+    from playsound import playsound
+    created = False
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
         clear()
     ydl_opts = {'logger': logger()}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-        playlist_title = info_dict['title'].replace(':', ' -')
-        with open(playlist_title + ' metadata.json', 'w') as file:
+        playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+        if not os.path.isdir(playlist_title):
+            created = True
+            os.mkdir(playlist_title)
+        with open(os.path.join(playlist_title, playlist_title + ' metadata.json'), 'w') as file:
             json.dump(info_dict, file, sort_keys=True, indent=4, separators=(',', ': '))
     ydl_opts = {
         'outtmpl': os.path.join(playlist_title, '%(title)s.%(ext)s'),
@@ -76,12 +102,19 @@ def download_playlist_mp3(url):
             'preferredquality': '192',
         }],
     }
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        pass #ydl.download([url])
+    if created:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    else:
+        if overwrite:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
     playlist = {}
     for i in info_dict['entries']:
-        title = i['title']
-        print(title)
+        playlist[str(i['playlist_index'])] = [i['title'], (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'))];
+    with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'w') as file:
+        json.dump(playlist, file, indent=4, separators=(',', ': '))
+    if autoplay: play_playlist(playlist_title)
 
 def downloadmp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
@@ -291,7 +324,7 @@ def typetext2():
 
 def main():
     clear()
-    #os.system('color a')
+    os.system('color a')
     #downloadmp3()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
@@ -304,10 +337,13 @@ def main():
     print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    #download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U')
-    downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
+    #downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
+    #download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
+    #play_playlist('Creatures of Habit')
+    download_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
+    #play_playlist('Mogul Grooves')
 if __name__ == "__main__":
     install_dependencies()
     main()
