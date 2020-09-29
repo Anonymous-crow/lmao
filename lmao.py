@@ -1,5 +1,5 @@
-from __future__ import unicode_literals
-import os, base64, youtube_dl, pafy, json
+#from future import unicode_literals
+import os, base64, json, youtube_dl, pafy
 
 def install_dependencies():
     os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
@@ -12,6 +12,7 @@ url = 'https://www.youtube.com/watch?v=BqnG_Ei35JE'
 
 class logger():
     """a simple logger for youtube_dl."""
+
     def debug(self, msg):
         print(msg)
 
@@ -23,7 +24,6 @@ class logger():
 
 def b64_encode_img(imgpth):
     return base64.b64encode(open(imgpth, 'rb').read()).decode('utf-8')
-
 
 def b64_decode_img(imgencoded, filepath=False):
     decoded_image_data = base64.decodebytes(imgencoded.encode('utf-8'))
@@ -39,49 +39,17 @@ def b64_encode(text):
 def b64_decode(text):
     return base64.b64decode(text.encode('ascii')).decode('ascii')
 
-def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename = False, overwrite = False, path = 'downloads\\'):
+def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename = False, overwrite = False, path = 'downloads'):
         if not filename:
             os.system('curl -O ' + url); clear();
         else:
-            if overwrite: os.system('curl ' + url + ' --output ' + path + filename); clear();
+            if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear();
             else:
                 while True:
-                    if not os.path.isfile(path+filename): os.system('curl ' + url + ' --output ' + path + filename); clear(); break
+                    if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear(); break
                     else: filename = filename.split('.')[0] + '(1).' + filename.split('.')[1]
 
-def downloadbestaudio(url = 'https://www.youtube.com/watch?v=BqnG_Ei35JE'):
-    video = pafy.new(url)
-    bestaudio = video.getbestaudio()
-    bestaudio.download()
-
-
-def downloadallaudio(url = 'https://www.youtube.com/watch?v=BqnG_Ei35JE'):
-    from playsound import playsound
-    video = pafy.new(url)
-    audiostreams = video.audiostreams
-    listlist = []
-    numblist = 0
-    for i in audiostreams:
-        print(i.bitrate, video.title+'.'+i.extension, i.get_filesize())
-        listlist.append(numblist)
-        numblist += 1
-    for i in listlist:
-        audiostreams[i].download()
-    playsound(video.title + ".m4a", False)
-    os.remove(video.title + ".m4a")
-    os.remove(video.title + ".webm")
-
-def downloadallaudio2(url = 'https://www.youtube.com/watch?v=BqnG_Ei35JE'):
-    from playsound import playsound
-    listlist = []; numblist = 0; video=pafy.new(url)
-    for i in video.audiostreams:
-        print(i.bitrate, video.title+'.'+i.extension, i.get_filesize()); listlist.append(numblist); numblist += 1
-    for i in listlist:
-        video.audiostreams[i].download()
-    playsound(video.title + ".m4a"); os.remove(video.title + ".m4a"); os.remove(video.title + ".webm")
-
-
-def download_video(url = 'https://www.youtube.com/watch?v=iuF6CpML3IQ'):
+def download_video(url):
     for i in pafy.new(url).streams:
         print(i)
     pafy.new(url).getbest(preftype ="mp4").download()
@@ -98,7 +66,7 @@ def download_playlist_mp3(url):
         with open(playlist_title + ' metadata.json', 'w') as file:
             json.dump(info_dict, file, sort_keys=True, indent=4, separators=(',', ': '))
     ydl_opts = {
-        'outtmpl': playlist_title+'\\%(title)s.%(ext)s',
+        'outtmpl': os.path.join(playlist_title, '%(title)s.%(ext)s'),
         'nooverwrites': True,
         'logger': logger(),
         'format': 'bestaudio/best',
@@ -112,9 +80,10 @@ def download_playlist_mp3(url):
         pass #ydl.download([url])
     playlist = {}
     for i in info_dict['entries']:
-        title = i
+        title = i['title']
+        print(title)
 
-def downloadmp3(url, autoplay=True):
+def downloadmp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
@@ -123,7 +92,8 @@ def downloadmp3(url, autoplay=True):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
         video_title=info_dict['title'].replace(':', ' -')
-    if not os.path.isfile('downloads\\' + video_title + ".mp3"):
+    filename = video_title + ".mp3"
+    if not os.path.isfile(os.path.join(path, filename)):
         ydl_opts = {
             'outtmpl': '%(title)s.%(ext)s',
             'format': 'bestaudio/best',
@@ -137,9 +107,11 @@ def downloadmp3(url, autoplay=True):
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         #clear()
-        if os.path.isdir('downloads\\'): os.rename(video_title + ".mp3", 'downloads\\' + video_title + ".mp3")
-        else: os.mkdir('downloads'); os.rename(video_title + ".mp3", 'downloads\\' + video_title + ".mp3")
-    if autoplay: playsound('downloads\\' + video_title + ".mp3", False)
+        if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
+        else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
+    if autoplay:
+        if os.name == 'nt': _ = playsound(os.path.join(path, filename), False)
+        else: _ = playsound(os.path.join(path, filename))
 
 def parseimages(folder = '\\'):
     if not os.path.isdir(folder + '/'): return None
@@ -319,7 +291,7 @@ def typetext2():
 
 def main():
     clear()
-    os.system('color a')
+    #os.system('color a')
     #downloadmp3()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
@@ -332,8 +304,8 @@ def main():
     print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U')
-    #downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
+    #download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U')
+    downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
     consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
 if __name__ == "__main__":
