@@ -3,7 +3,6 @@ import os, base64, json, youtube_dl, pafy, threading
 
 def install_dependencies():
     os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
-#print(help("modules"))
 
 def clear():
     if os.name == 'nt': _ = os.system('cls')
@@ -61,12 +60,6 @@ def play_playlist(playlist_title=False, url=False):
     if playlist_title:
         with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
-            '''
-            int_playlist = {int(k) : v for k, v in playlist.items()}
-            playlist = sorted(playlist.items(), key=lambda item: int(item[0]))
-            print (playlist)
-            print (int_playlist)
-            '''
         for i in playlist:
             filename = playlist[i][1].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
             print('Now playing: ' + playlist[i][0])
@@ -76,7 +69,7 @@ def play_playlist(playlist_title=False, url=False):
                 print("Something went wrong playing the file " + filename)
 
 
-def download_playlist_mp3(url, autoplay=False, overwrite=False):
+def yt_playlist_mp3(url, autoplay=False, overwrite=False):
     from playsound import playsound
     created = False
     if not os.path.isfile('ffmpeg.exe'):
@@ -90,10 +83,10 @@ def download_playlist_mp3(url, autoplay=False, overwrite=False):
             created = True
             os.mkdir(playlist_title)
         with open(os.path.join(playlist_title, playlist_title + ' metadata.json'), 'w') as file:
-            json.dump(info_dict, file, sort_keys=True, indent=4, separators=(',', ': '))
+            json.dump(info_dict, file, indent=4, separators=(',', ': '))
     ydl_opts = {
         'outtmpl': os.path.join(playlist_title, '%(title)s.%(ext)s'),
-        'nooverwrites': True,
+        'nooverwrites': overwrite,
         'logger': logger(),
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -116,7 +109,7 @@ def download_playlist_mp3(url, autoplay=False, overwrite=False):
         json.dump(playlist, file, indent=4, separators=(',', ': '))
     if autoplay: play_playlist(playlist_title)
 
-def downloadmp3(url, path='downloads', autoplay=True):
+def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
@@ -340,7 +333,7 @@ def main():
     #downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
     #download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
-    download_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
+    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     #play_playlist('Mogul Grooves')
