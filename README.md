@@ -1,2 +1,2 @@
 # lmao
-an excersise in python and python modules
+an exercise in python and python modules

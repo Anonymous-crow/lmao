@@ -318,7 +318,7 @@ def typetext2():
 def main():
     clear()
     os.system('color a')
-    #downloadmp3()
+    #yt_mp3()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
     downloadfile("https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", overwrite=True, filename="alice.png")
@@ -327,13 +327,13 @@ def main():
     '''
     #download_url(base64.b64decode('aHR0cHM6Ly9jcm93LmVwaWNnYW1lci5vcmcvYXNzZXRzL2xtYW8uZXhl'.encode('ascii')).decode('ascii'))
     #os.system(b64_decode('c3RhcnQgbG1hby5leGU='))
-    #downloadmp3('https://www.youtube.com/watch?v=qQzdAsjWGPg')
-    #t2 = threading.Thread(target=downloadmp3, args = ('https://www.youtube.com/watch?v=THpt6ugy_8E',)); t2.start();
+    #yt_mp3('https://www.youtube.com/watch?v=qQzdAsjWGPg')
+    #t2 = threading.Thread(target=yt_mp3, args = ('https://www.youtube.com/watch?v=THpt6ugy_8E',)); t2.start();
     print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    #downloadmp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
-    #download_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
+    #yt_mp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
+    #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
     yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     consoleTTS()
