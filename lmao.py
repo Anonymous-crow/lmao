@@ -1,5 +1,7 @@
 #from future import unicode_literals
-import os, base64, json, youtube_dl, pafy, threading
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import base64, json, youtube_dl, pafy, threading, pygame
 
 def install_dependencies():
     os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
@@ -53,20 +55,80 @@ def download_video(url):
         print(i)
     pafy.new(url).getbest(preftype ="mp4").download()
 
-def play_playlist(playlist_title=False, url=False):
-    from playsound import playsound
+def music_player():
+    import curses
+    s = curses.initscr()
+    curses.curs_set(0)
+    sh, sw = s.getmaxyx()
+    w = curses.newwin(sh, sw, 0, 0)
+    w.keypad(1)
+    w.timeout(100)
+
+def cli_play_playlist(playlist_title=False, url=False):
+    clear()
+    pygame.mixer.init()
     if not playlist_title and not url:
         return print('please pass a url or playlist title')
+    if playlist_title and url:
+        return print('please do not pass both a url and playlist title')
+    if url:
+        ydl_opts = {'logger': logger()}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
     if playlist_title:
+        if not os.path.isdir(playlist_title):
+            return print('folder '+playlist_title+' does not exist')
         with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
+        print('Now Playing: '+playlist_title)
+        lmao = True
         for i in playlist:
             filename = playlist[i][1].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
-            print('Now playing: ' + playlist[i][0])
+            clear()
+# --------------------------Path of your music
             try:
-                playsound(os.path.join(playlist_title, filename))
+                if lmao:
+                    pygame.mixer.music.load(os.path.join(playlist_title, filename))
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play()
+                busy = 1
+                while busy and lmao:
+                    busy = pygame.mixer.music.get_busy()
+                    print('Now Playing Playlist: '+playlist_title)
+                    print('Now Playing: ' + playlist[i][0])
+                    print("Press 'p' to pause")
+                    print("Press 'r' to resume")
+                    print("Press 'v' set volume")
+                    print("Press 's' to skip")
+                    print("Press 'e' to exit")
+                    ch = input("['p','r','v','s','e']>>>")
+                    busy = pygame.mixer.music.get_busy()
+                    clear()
+                    if ch == "p":
+                        pygame.mixer.music.pause()
+                    elif ch == "r":
+                        pygame.mixer.music.unpause()
+                    elif ch == "v":
+                        v = float(input("Enter volume(0 to 1): "))
+                        pygame.mixer.music.set_volume(v)
+                        clear()
+                    elif ch == "s":
+                        pygame.mixer.music.stop()
+                        break
+                    elif ch == "e":
+                        pygame.mixer.music.stop()
+                        lmao = False
+                        break
+                    elif ch == "w":
+                        pygame.mixer.music.set_pos(200)
+                    elif ch == "q":
+                        print(pygame.mixer.music.get_pos())
+                        print(pygame.mixer.music.get_busy())
             except:
-                print("Something went wrong playing the file " + filename)
+                print('there was an issue playing '+playlist[i][0])
+
+
 
 
 def yt_playlist_mp3(url, autoplay=False, overwrite=False):
@@ -107,7 +169,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False):
         playlist[str(i['playlist_index'])] = [i['title'], (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'))];
     with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
-    if autoplay: play_playlist(playlist_title)
+    if autoplay: cli_play_playlist(playlist_title)
 
 def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
@@ -329,16 +391,17 @@ def main():
     #os.system(b64_decode('c3RhcnQgbG1hby5leGU='))
     #yt_mp3('https://www.youtube.com/watch?v=qQzdAsjWGPg')
     #t2 = threading.Thread(target=yt_mp3, args = ('https://www.youtube.com/watch?v=THpt6ugy_8E',)); t2.start();
-    print(parseimages_dict('downloads'))
+    #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
     #yt_mp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
-    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
-    consoleTTS()
+    #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
+    #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
-    #play_playlist('Mogul Grooves')
+    cli_play_playlist('Mogul Grooves')
+    music_player()
 if __name__ == "__main__":
     install_dependencies()
     main()
