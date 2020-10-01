@@ -335,10 +335,10 @@ def main():
     #yt_mp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
-    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
+    #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
-    #play_playlist('Mogul Grooves')
+    play_playlist('Creatures of Habit')
 if __name__ == "__main__":
     install_dependencies()
     main()
