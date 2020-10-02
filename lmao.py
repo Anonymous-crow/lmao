@@ -85,6 +85,9 @@ def cli_play_playlist(playlist_title=False, url=False):
         lmao = True
         for i in playlist:
             filename = playlist[i][1].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            title = playlist[i][0]
+            if playlist[i][3] != 'null':
+                title = playlist[i][0] + ' by ' + playlist[i][3]
             clear()
 # --------------------------Path of your music
             try:
@@ -92,11 +95,12 @@ def cli_play_playlist(playlist_title=False, url=False):
                     pygame.mixer.music.load(os.path.join(playlist_title, filename))
                     pygame.mixer.music.set_volume(0.5)
                     pygame.mixer.music.play()
-                busy = 1
+                busy = 1;
+
                 while busy and lmao:
                     busy = pygame.mixer.music.get_busy()
                     print('Now Playing Playlist: '+playlist_title)
-                    print('Now Playing: ' + playlist[i][0])
+                    print('Now Playing: ' + title)
                     print("Press 'p' to pause")
                     print("Press 'r' to resume")
                     print("Press 'v' set volume")
@@ -166,7 +170,9 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False):
                 ydl.download([url])
     playlist = {}
     for i in info_dict['entries']:
-        playlist[str(i['playlist_index'])] = [i['title'], (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'))];
+        if i["creator"] != None: creator = i["creator"]
+        else: creator = "null"
+        playlist[str(i['playlist_index'])] = [i['title'], (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')), creator];
     with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
     if autoplay: cli_play_playlist(playlist_title)
@@ -397,11 +403,11 @@ def main():
     #yt_mp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
-    #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
+    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     cli_play_playlist('Mogul Grooves')
-    music_player()
+    #music_player()
 if __name__ == "__main__":
     install_dependencies()
     main()
