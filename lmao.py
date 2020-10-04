@@ -6,6 +6,15 @@ import base64, json, youtube_dl, pafy, threading, pygame
 def install_dependencies():
     os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
 
+def sec_t_timestamp(sec):
+    import time
+    ty_res = time.gmtime(sec)
+    if sec < 3600:
+        res = time.strftime("%M:%S",ty_res)
+    else:
+        res = time.strftime("%H:%M:%S",ty_res)
+    return res
+
 def clear():
     if os.name == 'nt': _ = os.system('cls')
     else: _ = os.system('clear')
@@ -55,14 +64,172 @@ def download_video(url):
         print(i)
     pafy.new(url).getbest(preftype ="mp4").download()
 
-def music_player():
-    import curses
-    s = curses.initscr()
-    curses.curs_set(0)
-    sh, sw = s.getmaxyx()
-    w = curses.newwin(sh, sw, 0, 0)
-    w.keypad(1)
-    w.timeout(100)
+def music_playlist_player(playlist_title=False, url=False):
+    import curses, traceback
+    clear()
+    pygame.mixer.init()
+
+
+    if not playlist_title and not url:
+        return print('please pass a url or playlist title')
+    if playlist_title and url:
+        return print('please do not pass both a url and playlist title')
+    if url:
+        ydl_opts = {'logger': logger()}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+    if playlist_title:
+        if not os.path.isdir(playlist_title):
+            return print('folder '+playlist_title+' does not exist')
+        with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
+            playlist = json.load(file)
+
+
+        lmao = 1
+        try:
+            # -- Initialize --
+            stdscr = curses.initscr()   # initialize curses screen
+            x_w, y_w = stdscr.getmaxyx()
+            curses.noecho()             # turn off auto echoing of keypress on to screen
+            curses.cbreak()             # enter break mode where pressing Enter key
+                                        #  after keystroke is not required for it to register
+            stdscr.keypad(1)            # enable special Key values such as curses.KEY_LEFT etc
+            stdscr.nodelay(True)
+        except:
+            traceback.print_exc()     # print trace back log of the error
+            stdscr.keypad(0)
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()
+            return print('error initalising curses')
+
+        for i in playlist:
+            filename = playlist[i]['filename'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            title = playlist[i]['title']; legnth_s=playlist[i]['duration']; legnth=sec_t_timestamp(legnth_s)
+            if playlist[i]['Metadata'] != None:
+                title = playlist[i]['Metadata']['track'] + ' by ' + playlist[i]['Metadata']['artist']
+            clear()
+            try:
+                if lmao:
+                    pygame.mixer.music.load(os.path.join(playlist_title, filename))
+                    pygame.mixer.music.set_volume(1)
+                    pygame.mixer.music.play()
+            except:
+                print('There was a problem playing '+title)
+            while pygame.mixer.music.get_busy() and lmao:
+                # stay in this loop till the user presses 'q'
+                songpos = pygame.mixer.music.get_pos()/1000
+                x_w, y_w = stdscr.getmaxyx()
+                stdscr.clear()
+                stdscr.border(0)
+                stdscr.addstr(1, 1, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
+                stdscr.addstr(2, 1, 'Now Playing Song '+i+': '+title, curses.A_NORMAL)
+                stdscr.addstr(3, 1, sec_t_timestamp(songpos)+'----'+legnth, curses.A_NORMAL)
+                stdscr.addstr(int(x_w-4), 1, 'Press q to quit, s to skip, o to pause, p to play', curses.A_NORMAL)
+                stdscr.addstr(1, 1, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
+                ch = stdscr.getch()
+                if ch == ord('q'):
+                    pygame.mixer.music.stop()
+                    lmao=0
+                    break
+                if ch == ord('s'):
+                    pygame.mixer.music.stop()
+                    break
+                if ch == ord('p'):
+                    pygame.mixer.music.unpause()
+                if ch == ord('o'):
+                    pygame.mixer.music.pause()
+                if ch == ord('.'):
+                    pygame.mixer.music.unpause()
+                if ch == ord(','):
+                    pygame.mixer.music.pause()
+                if ch == ord('w'):
+                    pygame.mixer.music.set_pos(180)
+                stdscr.refresh()
+
+        # --- Cleanup on exit ---
+        pygame.mixer.music.stop()
+        stdscr.keypad(0)
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
+
+
+def music_player(filename=False, url=False):
+    import curses, traceback
+    clear()
+    pygame.mixer.init()
+
+
+    if not filename and not url:
+        return print('please pass a url or filepath')
+    if filename and url:
+        return print('please do not pass both a url and filepath')
+    if url:
+        ydl_opts = {'logger': logger()}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            song_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            filename = song_title+'.mp3'
+    if filename:
+        if not os.path.isfile(os.path.join('downloads', filename)):
+            return print(filename+' does not exist in downloads')
+        lmao = 1
+        try:
+            # -- Initialize --
+            stdscr = curses.initscr()   # initialize curses screen
+            x_w, y_w = stdscr.getmaxyx()
+            curses.noecho()             # turn off auto echoing of keypress on to screen
+            curses.cbreak()             # enter break mode where pressing Enter key
+                                        #  after keystroke is not required for it to register
+            stdscr.keypad(1)            # enable special Key values such as curses.KEY_LEFT etc
+            stdscr.nodelay(True)
+        except:
+            traceback.print_exc()     # print trace back log of the error
+            stdscr.keypad(0)
+            curses.echo()
+            curses.nocbreak()
+            curses.endwin()
+            return print('error initalising curses')
+        try:
+            pygame.mixer.music.load(os.path.join('downloads', filename))
+            pygame.mixer.music.set_volume(1)
+            pygame.mixer.music.play()
+        except:
+            print('There was a problem playing '+info_dict['title'])
+        while True:
+            # stay in this loop till the user presses 'q'
+            songpos = pygame.mixer.music.get_pos()/1000
+            x_w, y_w = stdscr.getmaxyx()
+            stdscr.clear()
+            stdscr.border(0)
+            stdscr.addstr(2, 1, 'Now Playing Song: '+song_title, curses.A_NORMAL)
+            stdscr.addstr(3, 1, sec_t_timestamp(songpos), curses.A_NORMAL)
+            stdscr.addstr(int(x_w-4), 1, 'Press q to quit, o to pause, p to play', curses.A_NORMAL)
+            ch = stdscr.getch()
+            if ch == ord('q'):
+                pygame.mixer.music.stop()
+                break
+            if ch == ord('p'):
+                pygame.mixer.music.unpause()
+            if ch == ord('o'):
+                pygame.mixer.music.pause()
+            if ch == ord('.'):
+                pygame.mixer.music.unpause()
+            if ch == ord(','):
+                pygame.mixer.music.pause()
+            if ch == ord('w'):
+                pygame.mixer.music.set_pos(180)
+            stdscr.refresh()
+
+        # --- Cleanup on exit ---
+        pygame.mixer.music.stop()
+        stdscr.keypad(0)
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
+
 
 def cli_play_playlist(playlist_title=False, url=False):
     clear()
@@ -84,10 +251,10 @@ def cli_play_playlist(playlist_title=False, url=False):
         print('Now Playing: '+playlist_title)
         lmao = True
         for i in playlist:
-            filename = playlist[i][1].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
-            title = playlist[i][0]
-            if playlist[i][3] != 'null':
-                title = playlist[i][0] + ' by ' + playlist[i][3]
+            filename = playlist[i]['filename'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            title = playlist[i]['title']; legnth_s=playlist[i]['duration']; legnth=sec_t_timestamp(legnth_s)
+            if playlist[i]["Metadata"] != None:
+                title = playlist[i]['title'] + ' by ' + playlist[i]["Metadata"]["artist"]
             clear()
 # --------------------------Path of your music
             try:
@@ -170,12 +337,12 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False):
                 ydl.download([url])
     playlist = {}
     for i in info_dict['entries']:
-        if i["creator"] != None: creator = i["creator"]
-        else: creator = "null"
-        playlist[str(i['playlist_index'])] = [i['title'], (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')), creator];
+        if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"]}
+        else: metadata = None
+        playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), 'filepath': os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')), 'Metadata': metadata, 'duration': i["duration"]};
     with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
-    if autoplay: cli_play_playlist(playlist_title)
+    if autoplay: music_playlist_player(playlist_title)
 
 def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
@@ -204,8 +371,40 @@ def yt_mp3(url, path='downloads', autoplay=True):
         if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
         else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
     if autoplay:
+        music_player()
+        '''
         if os.name == 'nt': _ = playsound(os.path.join(path, filename), False)
         else: _ = playsound(os.path.join(path, filename))
+        '''
+
+
+
+def yt_live(url, autoplay=True):
+    from playsound import playsound; import sys
+    if not os.path.isfile('ffmpeg.exe'):
+        os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
+        clear()
+    ydl_opts={}
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+    except:
+        return print(url.split('/')[3]+' is offline or cant be accessed')
+    with open(url.split('/')[3] + ' metadata.json', 'w') as file:
+        json.dump(info_dict, file, indent=4, separators=(',', ': '))
+    if autoplay:
+        if os.name == 'nt':
+            if not os.path.isfile('mpv\\mpv.exe'):
+                if not os.path.isdir('mpv'):
+                    os.mkdir('mpv')
+                os.system('curl https://crow.epicgamer.org/assets/updater.bat --output '+os.path.join('mpv','updater.bat'))
+                os.system('curl https://crow.epicgamer.org/assets/updater.ps1 --output '+os.path.join('mpv','updater.ps1'))
+                os.system('mpv\\updater.bat /WAIT')
+            os.system('mpv\\mpv.exe '+info_dict["url"])
+        else:
+            os.system('mpv '+info_dict["url"])
+
+        #clear()
 
 def parseimages(folder = '\\'):
     if not os.path.isdir(folder + '/'): return None
@@ -400,14 +599,14 @@ def main():
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    #yt_mp3('https://www.youtube.com/watch?v=iGGVWGJ0ZiM')
+    yt_live('https://www.twitch.tv/scarra')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
     yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
-    cli_play_playlist('Mogul Grooves')
-    #music_player()
+    #cli_play_playlist('Mogul Grooves')
+    music_playlist_player('Mogul Grooves')
 if __name__ == "__main__":
     install_dependencies()
     main()
