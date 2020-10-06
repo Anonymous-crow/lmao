@@ -2,9 +2,11 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import base64, json, youtube_dl, pafy, threading, pygame
+import twitchio as tio
+import asyncio
 
 def install_dependencies():
-    os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python --user')
+    os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio --user')
 
 def sec_t_timestamp(sec):
     import time
@@ -377,34 +379,82 @@ def yt_mp3(url, path='downloads', autoplay=True):
         else: _ = playsound(os.path.join(path, filename))
         '''
 
+def install_chromium():
+    import zipfile
+    if not os.path.isdir('resources'):
+        os.mkdir('resources')
+    if not os.path.isdir('resources\\chromium'):
+        os.mkdir('resources\\chromium')
+        if os.name == 'nt':
+            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/813604/chrome-win.zip')
+        if os.name == 'nt':
+            with zipfile.ZipFile('resources\\chromium\\chrome-win.zip', 'r') as zip_ref:
+                zip_ref.extractall('resources\\chromium')
+            os.remove("resources\\chromium\\chrome-win.zip")
+        if os.name == 'nt':
+            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/813606/chrome-linux.zip')
+        if os.name == 'nt':
+            with zipfile.ZipFile(os.path.join('resources','chromium','chrome-linux.zip'), 'r') as zip_ref:
+                zip_ref.extractall(os.path.join('resources','chromium'))
+            os.remove(os.path.join("resources","chromium","chrome-linux.zip"))
 
-
-def yt_live(url, autoplay=True):
+def yt_live(url, autoplay=True, MPV=True, chromechat=True):
     from playsound import playsound; import sys
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
         clear()
+    install_chromium()
     ydl_opts={}
+
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
     except:
         return print(url.split('/')[3]+' is offline or cant be accessed')
-    with open(url.split('/')[3] + ' metadata.json', 'w') as file:
+    with open(os.path.join('downloads', url.split('/')[3] + ' metadata.json'), 'w') as file:
         json.dump(info_dict, file, indent=4, separators=(',', ': '))
     if autoplay:
-        if os.name == 'nt':
-            if not os.path.isfile('mpv\\mpv.exe'):
-                if not os.path.isdir('mpv'):
-                    os.mkdir('mpv')
-                os.system('curl https://crow.epicgamer.org/assets/updater.bat --output '+os.path.join('mpv','updater.bat'))
-                os.system('curl https://crow.epicgamer.org/assets/updater.ps1 --output '+os.path.join('mpv','updater.ps1'))
-                os.system('mpv\\updater.bat /WAIT')
-            os.system('mpv\\mpv.exe '+info_dict["url"])
-        else:
-            os.system('mpv '+info_dict["url"])
+        if MPV:
+            if chromechat:
+                if os.name == 'nt':
+                    if info_dict["extractor"]=='twitch:stream':
+                        os.system('start resources\\chromium\\chrome-win\\chrome.exe --app=https://www.twitch.tv/popout/'+info_dict['webpage_url_basename']+'/chat?popout=')
+                if os.name == 'posix':
+                    if info_dict["extractor"]=='twitch:stream':
+                        os.system('start resources/chromium/chrome-linux/chrome --app=https://www.twitch.tv/popout/'+info_dict['webpage_url_basename']+'/chat?popout=')
+            if os.name == 'nt':
+                if not os.path.isfile('resources\\mpv\\mpv.exe'):
+                    if not os.path.isdir('resources'):
+                        os.mkdir('resources')
+                        if not os.path.isdir('resources\\mpv'): os.mkdir('resources\\mpv')
+                    os.system('curl https://crow.epicgamer.org/assets/updater.bat --output '+os.path.join('resources', 'mpv','updater.bat'))
+                    os.system('curl https://crow.epicgamer.org/assets/updater.ps1 --output '+os.path.join('resources','mpv','updater.ps1'))
+                    os.system('resources\\mpv\\updater.bat /WAIT')
+                os.system('start resources\\mpv\\mpv.exe '+info_dict["url"])
+            else:
+                os.system('mpv '+info_dict["url"])
+            if not chromechat:
+                import twitchbot
+                twitchbot.botrun()
+        if not MPV:
+                if os.name == 'nt':
+                    os.system('start iexplore.exe -k '+info_dict['webpage_url'])
+                if os.name == 'posix':
+                    os.system('start chrome --app='+info_dict['webpage_url'])
+
+
 
         #clear()
+
+def Followinge(url):
+    ydl_opts = {}
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(url, download=False)
+    yes=True
+    client = tio.client.Client()
+    while yes:
+        following = asyncio.run(client.get_following(user_id=info_dict['display_id']))
+        print(following)
 
 def parseimages(folder = '\\'):
     if not os.path.isdir(folder + '/'): return None
@@ -427,45 +477,6 @@ def parseimages_dict(folder = '\\'):
 
 
 
-
-def videoplayer_no_sound(url):
-    if not os.path.isfile('ffmpeg.exe'):
-        os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
-        clear()
-    video=pafy.new(url); ash=url.split('=')[1]
-    video.getbest(preftype ="mp4").download()
-    import cv2
-    import numpy as np
-    cap = cv2.VideoCapture(video.title+'.mp4')
-    if (cap.isOpened()== False):
-      print("Error opening video  file")
-    while(cap.isOpened()):
-      ret, frame = cap.read()
-      if ret == True:
-        cv2.imshow('Frame', frame)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-          break
-      else:
-        break
-    cap.release()
-    cv2.destroyAllWindows()
-
-def videoplayer(url):
-    import pyglet
-    video=pafy.new(url); ash=url.split('=')[1]
-    video.getbest(preftype ="mp4").download()
-    vidPath = video.title+'.mp4'
-    window= pyglet.window.Window()
-    player = pyglet.media.Player()
-    source = pyglet.media.StreamingSource()
-    MediaLoad = pyglet.media.load(vidPath)
-    player.queue(MediaLoad)
-    player.play()
-    @window.event
-    def on_draw():
-        if player.source and player.source.video_format:
-            player.get_texture().blit(0,0)
-    pyglet.app.run()
 
 def tts(lmao = 'lmao'):
     from gtts import gTTS; from playsound import playsound
@@ -599,14 +610,14 @@ def main():
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    yt_live('https://www.twitch.tv/scarra')
+    yt_live('https://www.twitch.tv/markiplier', chromechat=False)
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
     #play_playlist('Creatures of Habit')
-    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
+    #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     #cli_play_playlist('Mogul Grooves')
-    music_playlist_player('Mogul Grooves')
+    #music_playlist_player('Mogul Grooves')
 if __name__ == "__main__":
     install_dependencies()
     main()
