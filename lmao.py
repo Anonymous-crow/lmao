@@ -449,7 +449,8 @@ def yt_live(url, autoplay=True, MPV=True, chromechat=False):
                 os.system('mpv '+info_dict["url"])
             if not chromechat:
                 import twitchbot
-                twitchbot.botrun()
+                bot = twitchbot.Bot([info_dict['webpage_url_basename']])
+                bot.run()
         if not MPV:
             os.system('start chrome --app='+info_dict['webpage_url'])
 
@@ -622,7 +623,7 @@ def main():
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    yt_live('https://www.twitch.tv/ludwig', chromechat=False)
+    yt_live('https://www.twitch.tv/ludwig', MPV=True, chromechat=False)
     #get_videos_by_channel('https://www.youtube.com/channel/UCfWnoT0YX8RfjFaXmg2Eq5g/')
     #yt_playlist_mp3('https://www.youtube.com/watch?v=mKQ9uXIjulc&list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     #play_playlist('Creatures of Habit')
