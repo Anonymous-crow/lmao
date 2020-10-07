@@ -61,12 +61,24 @@ def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarra
                     if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear(); break
                     else: filename = filename.split('.')[0] + '(1).' + filename.split('.')[1]
 
+def infoget(url):
+    ydl_opts = {
+    'logger': logger(),
+    'ignoreerrors': True
+    }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(url, download=False)
+    with open(info_dict["uploader"]+' metadata.json', 'w') as file:
+        json.dump(info_dict, file, indent=4, separators=(',', ': '))
+
+
+
 def download_video(url):
     for i in pafy.new(url).streams:
         print(i)
     pafy.new(url).getbest(preftype ="mp4").download()
 
-def music_playlist_player(playlist_title=False, url=False):
+def music_playlist_player(playlist_title=False, url=False, path='playlists'):
     import curses, traceback
     clear()
     pygame.mixer.init()
@@ -82,9 +94,9 @@ def music_playlist_player(playlist_title=False, url=False):
             info_dict = ydl.extract_info(url, download=False)
             playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
     if playlist_title:
-        if not os.path.isdir(playlist_title):
+        if not os.path.isdir(os.path.join(path, playlist_title)):
             return print('folder '+playlist_title+' does not exist')
-        with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
+        with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
 
 
@@ -114,7 +126,7 @@ def music_playlist_player(playlist_title=False, url=False):
             clear()
             try:
                 if lmao:
-                    pygame.mixer.music.load(os.path.join(playlist_title, filename))
+                    pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
                     pygame.mixer.music.set_volume(1)
                     pygame.mixer.music.play()
             except:
@@ -233,7 +245,7 @@ def music_player(filename=False, url=False):
         curses.endwin()
 
 
-def cli_play_playlist(playlist_title=False, url=False):
+def cli_play_playlist(path='playlists', playlist_title=False, url=False):
     clear()
     pygame.mixer.init()
     if not playlist_title and not url:
@@ -246,9 +258,9 @@ def cli_play_playlist(playlist_title=False, url=False):
             info_dict = ydl.extract_info(url, download=False)
             playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
     if playlist_title:
-        if not os.path.isdir(playlist_title):
+        if not os.path.isdir(os.path.join(path, playlist_title)):
             return print('folder '+playlist_title+' does not exist')
-        with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'r') as file:
+        with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
         print('Now Playing: '+playlist_title)
         lmao = True
@@ -261,7 +273,7 @@ def cli_play_playlist(playlist_title=False, url=False):
 # --------------------------Path of your music
             try:
                 if lmao:
-                    pygame.mixer.music.load(os.path.join(playlist_title, filename))
+                    pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
                     pygame.mixer.music.set_volume(0.5)
                     pygame.mixer.music.play()
                 busy = 1;
@@ -304,8 +316,7 @@ def cli_play_playlist(playlist_title=False, url=False):
 
 
 
-def yt_playlist_mp3(url, autoplay=False, overwrite=False):
-    from playsound import playsound
+def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
@@ -314,13 +325,14 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
         playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
-        if not os.path.isdir(playlist_title):
+        if not os.path.isdir(os.path.join(path, playlist_title)):
             created = True
-            os.mkdir(playlist_title)
-        with open(os.path.join(playlist_title, playlist_title + ' metadata.json'), 'w') as file:
+            os.mkdir(path)
+            os.mkdir(os.path.join(path, playlist_title))
+        with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
             json.dump(info_dict, file, indent=4, separators=(',', ': '))
     ydl_opts = {
-        'outtmpl': os.path.join(playlist_title, '%(title)s.%(ext)s'),
+        'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
         'nooverwrites': overwrite,
         'logger': logger(),
         'format': 'bestaudio/best',
@@ -342,9 +354,11 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False):
         if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"]}
         else: metadata = None
         playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), 'filepath': os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')), 'Metadata': metadata, 'duration': i["duration"]};
-    with open(os.path.join(playlist_title, playlist_title + ' playlist.json'), 'w') as file:
+    with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
-    if autoplay: music_playlist_player(playlist_title)
+    if autoplay:
+        if Truecli: cli_play_playlist(path=path, playlist_title=playlist_title)
+        else: music_playlist_player(path=path, playlist_title=playlist_title)
 
 def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
@@ -398,7 +412,7 @@ def install_chromium():
                 zip_ref.extractall(os.path.join('resources','chromium'))
             os.remove(os.path.join("resources","chromium","chrome-linux.zip"))
 
-def yt_live(url, autoplay=True, MPV=True, chromechat=True):
+def yt_live(url, autoplay=True, MPV=True, chromechat=False):
     from playsound import playsound; import sys
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
@@ -437,10 +451,8 @@ def yt_live(url, autoplay=True, MPV=True, chromechat=True):
                 import twitchbot
                 twitchbot.botrun()
         if not MPV:
-                if os.name == 'nt':
-                    os.system('start iexplore.exe -k '+info_dict['webpage_url'])
-                if os.name == 'posix':
-                    os.system('start chrome --app='+info_dict['webpage_url'])
+            os.system('start chrome --app='+info_dict['webpage_url'])
+
 
 
 
@@ -605,13 +617,14 @@ def main():
     '''
     #download_url(base64.b64decode('aHR0cHM6Ly9jcm93LmVwaWNnYW1lci5vcmcvYXNzZXRzL2xtYW8uZXhl'.encode('ascii')).decode('ascii'))
     #os.system(b64_decode('c3RhcnQgbG1hby5leGU='))
-    #yt_mp3('https://www.youtube.com/watch?v=qQzdAsjWGPg')
+    #yt_mp3('https://open.spotify.com/album/0bbK5yLVZaXlboM8hq3DoV')
     #t2 = threading.Thread(target=yt_mp3, args = ('https://www.youtube.com/watch?v=THpt6ugy_8E',)); t2.start();
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    yt_live('https://www.twitch.tv/markiplier', chromechat=False)
-    #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_mrQpw7Bipv-a7DFFerdXeLe-Ll4yxdE6U', autoplay=True)
+    yt_live('https://www.twitch.tv/ludwig', chromechat=False)
+    #get_videos_by_channel('https://www.youtube.com/channel/UCfWnoT0YX8RfjFaXmg2Eq5g/')
+    #yt_playlist_mp3('https://www.youtube.com/watch?v=mKQ9uXIjulc&list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
     #play_playlist('Creatures of Habit')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
     #consoleTTS()

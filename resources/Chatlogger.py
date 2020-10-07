@@ -12,7 +12,7 @@ Get token here: https://twitchapps.com/tmi/
 """
 
 
-def get_chat(nickname, token, channel):
+def get_chat(nickname, token, channel, print=True):
     sock = socket.socket()
     sock.connect(('irc.chat.twitch.tv', 6667))
     sock.send(f"PASS {token}\r\n".encode('utf-8'))
@@ -31,8 +31,8 @@ def get_chat(nickname, token, channel):
                 if resp[0]==':':
                     user=resp.split('!')[0][1:]
                     msg=resp.split(':')[2:]
-                    msg = [''.join(msg[0:])]
-                    print('<'+user+'>  '+msg[0])
+                    msg=[''.join(msg[0:])]
+                    if print: print('<'+user+'>  '+msg[0])
 
     except KeyboardInterrupt:
         sock.close()
@@ -41,7 +41,7 @@ def get_chat(nickname, token, channel):
 def chatmain():
     dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     load_dotenv(dotenv_path)
-    nickname=os.getenv('nickname'); token=os.getenv('token')
+    nickname=os.getenv('NICKNAME'); token=os.getenv('TOKEN')
     print(nickname); print(token)
     channel = 'jerma985'
     get_chat(nickname, token, channel)

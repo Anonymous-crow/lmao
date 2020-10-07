@@ -1,0 +1,93 @@
+{
+    "1": {
+        "title": "Kiltro - \"If I Lead\" (Official Video)",
+        "filename": "Kiltro - 'If I Lead' (Official Video).mp3",
+        "filepath": "Creatures of Habit\\Kiltro - 'If I Lead' (Official Video).mp3",
+        "Metadata": null,
+        "duration": 215
+    },
+    "2": {
+        "title": "Curic\u00f3",
+        "filename": "Curic\u00f3.mp3",
+        "filepath": "Creatures of Habit\\Curic\u00f3.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Curic\u00f3"
+        },
+        "duration": 309
+    },
+    "3": {
+        "title": "Mi Capit\u00e1n",
+        "filename": "Mi Capit\u00e1n.mp3",
+        "filepath": "Creatures of Habit\\Mi Capit\u00e1n.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Mi Capit\u00e1n"
+        },
+        "duration": 271
+    },
+    "4": {
+        "title": "Corner Beat (Hair of the Dog)",
+        "filename": "Corner Beat (Hair of the Dog).mp3",
+        "filepath": "Creatures of Habit\\Corner Beat (Hair of the Dog).mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Corner Beat (Hair of the Dog)"
+        },
+        "duration": 233
+    },
+    "5": {
+        "title": "Lovers",
+        "filename": "Lovers.mp3",
+        "filepath": "Creatures of Habit\\Lovers.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Lovers"
+        },
+        "duration": 395
+    },
+    "6": {
+        "title": "Julia",
+        "filename": "Julia.mp3",
+        "filepath": "Creatures of Habit\\Julia.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Julia"
+        },
+        "duration": 239
+    },
+    "7": {
+        "title": "Kiltro - \"The Hustle\"",
+        "filename": "Kiltro - 'The Hustle'.mp3",
+        "filepath": "Creatures of Habit\\Kiltro - 'The Hustle'.mp3",
+        "Metadata": null,
+        "duration": 239
+    },
+    "8": {
+        "title": "Ursula",
+        "filename": "Ursula.mp3",
+        "filepath": "Creatures of Habit\\Ursula.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "Ursula"
+        },
+        "duration": 244
+    },
+    "9": {
+        "title": "The Drunk",
+        "filename": "The Drunk.mp3",
+        "filepath": "Creatures of Habit\\The Drunk.mp3",
+        "Metadata": {
+            "artist": "Kiltro",
+            "album": "Creatures of Habit",
+            "track": "The Drunk"
+        },
+        "duration": 201
+    }
+}
