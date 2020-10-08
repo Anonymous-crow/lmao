@@ -1,0 +1,12 @@
+# Binaries for programs and plugins
+*.dll
+*.so
+*.dylib
+*.env
+
+
+# Dependency directories (remove the comment below to include it)
+resources/chromium
+resources/mpv
+mingunies/AegeanSymphonicOrchestra-v2_5-universal
+mingunies/fluidsynth-x64
