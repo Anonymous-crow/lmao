@@ -68,7 +68,7 @@ def infoget(url):
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-    with open(info_dict["uploader"]+' metadata.json', 'w') as file:
+    with open(os.path.join('downloads', info_dict["uploader"]+' metadata.json'), 'w') as file:
         json.dump(info_dict, file, indent=4, separators=(',', ': '))
 
 
