@@ -4,7 +4,7 @@
 *.so
 *.dylib
 *.env
-
+*.mp3
 
 # Dependency directories (remove the comment below to include it)
 resources/chromium
@@ -13,3 +13,5 @@ mingunies/AegeanSymphonicOrchestra-v2_5-universal
 mingunies/fluidsynth-x64
 playlists/
 downloads/
+zynsubfx/
+synthh/

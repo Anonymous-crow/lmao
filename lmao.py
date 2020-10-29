@@ -1,12 +1,12 @@
 #from future import unicode_literals
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import base64, json, youtube_dl, pafy, threading, pygame
+import base64, json, youtube_dl, pafy, threading, pygame, eyed3
 import twitchio as tio
 import asyncio
 
 def install_dependencies():
-    os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio --user')
+    os.system('python -m pip install gtts playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
 
 def sec_t_timestamp(sec):
     import time
@@ -53,8 +53,10 @@ def b64_decode(text):
 
 def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename = False, overwrite = False, path = 'downloads'):
         if not filename:
-            os.system('curl -O ' + url); clear();
+            os.system('cd '+path+'&& curl -O ' + url + ' && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
         else:
+            if not os.path.isdir(path):
+                os.mkdir(path)
             if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear();
             else:
                 while True:
@@ -68,22 +70,16 @@ def infoget(url):
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-    with open(os.path.join('downloads', info_dict["uploader"]+' metadata.json'), 'w') as file:
+    if not os.path.isdir('downloads'):
+        os.mkdir('downloads')
+    with open(os.path.join('downloads', info_dict["title"]+' metadata.json'), 'w') as file:
         json.dump(info_dict, file, indent=4, separators=(',', ': '))
-
-
-
-def download_video(url):
-    for i in pafy.new(url).streams:
-        print(i)
-    pafy.new(url).getbest(preftype ="mp4").download()
+    print(info_dict)
 
 def music_playlist_player(playlist_title=False, url=False, path='playlists'):
     import curses, traceback
     clear()
     pygame.mixer.init()
-
-
     if not playlist_title and not url:
         return print('please pass a url or playlist title')
     if playlist_title and url:
@@ -103,6 +99,7 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
         lmao = 1
         try:
             # -- Initialize --
+            vol=1
             stdscr = curses.initscr()   # initialize curses screen
             x_w, y_w = stdscr.getmaxyx()
             curses.noecho()             # turn off auto echoing of keypress on to screen
@@ -127,7 +124,7 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
             try:
                 if lmao:
                     pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
-                    pygame.mixer.music.set_volume(1)
+                    pygame.mixer.music.set_volume(vol)
                     pygame.mixer.music.play()
             except:
                 print('There was a problem playing '+title)
@@ -140,26 +137,25 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
                 stdscr.addstr(1, 1, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
                 stdscr.addstr(2, 1, 'Now Playing Song '+i+': '+title, curses.A_NORMAL)
                 stdscr.addstr(3, 1, sec_t_timestamp(songpos)+'----'+legnth, curses.A_NORMAL)
-                stdscr.addstr(int(x_w-4), 1, 'Press q to quit, s to skip, o to pause, p to play', curses.A_NORMAL)
-                stdscr.addstr(1, 1, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
+                stdscr.addstr(4, 1, 'volume: '+str(int(vol*100))+'%', curses.A_NORMAL)
+                stdscr.addstr(int(x_w-1), 1, 'Press q to quit, s to skip, o to pause, p to play', curses.A_NORMAL)
                 ch = stdscr.getch()
                 if ch == ord('q'):
                     pygame.mixer.music.stop()
                     lmao=0
                     break
-                if ch == ord('s'):
-                    pygame.mixer.music.stop()
-                    break
-                if ch == ord('p'):
-                    pygame.mixer.music.unpause()
-                if ch == ord('o'):
-                    pygame.mixer.music.pause()
-                if ch == ord('.'):
-                    pygame.mixer.music.unpause()
-                if ch == ord(','):
-                    pygame.mixer.music.pause()
-                if ch == ord('w'):
-                    pygame.mixer.music.set_pos(180)
+                if ch == ord('s'): pygame.mixer.music.stop(); break
+                if ch == ord('p'): pygame.mixer.music.unpause()
+                if ch == ord('o'): pygame.mixer.music.pause()
+                if ch == ord('.'): pygame.mixer.music.unpause()
+                if ch == ord(','): pygame.mixer.music.pause()
+                if ch == ord('w'): pygame.mixer.music.set_pos(180)
+                if ch == curses.KEY_UP:
+                    if vol<1: vol+=0.1
+                    pygame.mixer.music.set_volume(vol)
+                if ch == curses.KEY_DOWN:
+                    if vol>0: vol-=0.1
+                    pygame.mixer.music.set_volume(vol)
                 stdscr.refresh()
 
         # --- Cleanup on exit ---
@@ -211,30 +207,29 @@ def music_player(filename=False, url=False):
             pygame.mixer.music.set_volume(1)
             pygame.mixer.music.play()
         except:
-            print('There was a problem playing '+info_dict['title'])
+            print('There was a problem playing '+filename.split('.')[0])
         while True:
             # stay in this loop till the user presses 'q'
             songpos = pygame.mixer.music.get_pos()/1000
             x_w, y_w = stdscr.getmaxyx()
             stdscr.clear()
             stdscr.border(0)
-            stdscr.addstr(2, 1, 'Now Playing Song: '+song_title, curses.A_NORMAL)
-            stdscr.addstr(3, 1, sec_t_timestamp(songpos), curses.A_NORMAL)
-            stdscr.addstr(int(x_w-4), 1, 'Press q to quit, o to pause, p to play', curses.A_NORMAL)
+            stdscr.addstr(1, 1, 'Now Playing Song: '+filename.split('.')[0], curses.A_NORMAL)
+            stdscr.addstr(2, 1, sec_t_timestamp(songpos), curses.A_NORMAL)
+            stdscr.addstr(int(x_w-1), 1, 'Press q to quit, o to pause, p to play', curses.A_NORMAL)
             ch = stdscr.getch()
-            if ch == ord('q'):
-                pygame.mixer.music.stop()
-                break
-            if ch == ord('p'):
-                pygame.mixer.music.unpause()
-            if ch == ord('o'):
-                pygame.mixer.music.pause()
-            if ch == ord('.'):
-                pygame.mixer.music.unpause()
-            if ch == ord(','):
-                pygame.mixer.music.pause()
-            if ch == ord('w'):
-                pygame.mixer.music.set_pos(180)
+            if ch == ord('s'): pygame.mixer.music.stop(); break
+            if ch == ord('p'): pygame.mixer.music.unpause()
+            if ch == ord('o'): pygame.mixer.music.pause()
+            if ch == ord('.'): pygame.mixer.music.unpause()
+            if ch == ord(','): pygame.mixer.music.pause()
+            if ch == ord('w'): pygame.mixer.music.set_pos(180)
+            if ch == curses.KEY_UP:
+                if vol<1: vol+=0.1
+                pygame.mixer.music.set_volume(vol)
+            if ch == curses.KEY_DOWN:
+                if vol>0: vol-=0.1
+                pygame.mixer.music.set_volume(vol)
             stdscr.refresh()
 
         # --- Cleanup on exit ---
@@ -314,26 +309,29 @@ def cli_play_playlist(path='playlists', playlist_title=False, url=False):
                 print('there was an issue playing '+playlist[i][0])
 
 
-
-
 def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
         os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
         clear()
-    ydl_opts = {'logger': logger()}
+    ydl_opts = {
+    'logger': logger(),
+    'ignoreerrors': True
+    }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
         playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
         if not os.path.isdir(os.path.join(path, playlist_title)):
             created = True
-            os.mkdir(path)
+            if not os.path.isdir(path):
+                os.mkdir(path)
             os.mkdir(os.path.join(path, playlist_title))
         with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
             json.dump(info_dict, file, indent=4, separators=(',', ': '))
     ydl_opts = {
         'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
         'nooverwrites': overwrite,
+        'ignoreerrors': True,
         'logger': logger(),
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -350,15 +348,91 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
     playlist = {}
-    for i in info_dict['entries']:
-        if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"]}
-        else: metadata = None
-        playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'), 'filepath': os.path.join(playlist_title, (i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')), 'Metadata': metadata, 'duration': i["duration"]};
+    if info_dict['extractor'] == "youtube:playlist":
+        for i in info_dict['entries']:
+            if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
+            else: metadata = None
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+            try:
+                if metadata != None:
+                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    audiofile.tag.artist = metadata["artist"]
+                    audiofile.tag.album = metadata["album"]
+                    audiofile.tag.album_artist = info_dict["uploader"]
+                    audiofile.tag.title = metadata["track"]
+                    audiofile.tag.track_num = i['playlist_index']
+                    audiofile.tag.release_date = i["release_year"]
+                    audiofile.tag.save()
+                    del audiofile
+                else:
+                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    audiofile.tag.album = info_dict['title']
+                    audiofile.tag.title = i['title']
+                    audiofile.tag.track_num = i['playlist_index']
+                    audiofile.tag.save()
+                    del audiofile
+            except:
+                print('could not write metadata to ', i['title'])
+    if info_dict['extractor'] == "soundcloud:set":
+        for i in info_dict['entries']:
+            metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+            try:
+                audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                audiofile.tag.artist = i["uploader"]
+                audiofile.tag.album = info_dict['title']
+                audiofile.tag.album_artist = i["uploader"]
+                audiofile.tag.title = i["title"]
+                audiofile.tag.track_num = i['playlist_index']
+                audiofile.tag.release_date = i["upload_date"]
+                audiofile.tag.save()
+                del audiofile
+            except:
+                print('could not write metadata to ', i['title'])
     with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
     if autoplay:
         if Truecli: cli_play_playlist(path=path, playlist_title=playlist_title)
         else: music_playlist_player(path=path, playlist_title=playlist_title)
+
+def playlist_metadata(playlist_title=False, url=False, path='playlists'):
+    if not playlist_title and not url: return print('please pass a url or playlist title')
+    if playlist_title and url: return print('please do not pass both a url and playlist title')
+    if url:
+        ydl_opts = {}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            print(info_dict)
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+    if playlist_title:
+        with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
+            playlist = json.load(file)
+        with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'r') as file:
+            info_dict = json.load(file)
+        for i in playlist:
+            #try:
+            if playlist[i]["Metadata"] != None:
+                audiofile = eyed3.load(playlist[i]['filepath'])
+                audiofile.tag.artist = playlist[i]["Metadata"]["artist"]
+                audiofile.tag.album = playlist[i]["Metadata"]["album"]
+                audiofile.tag.album_artist = playlist[i]["Metadata"]["album_artist"]
+                audiofile.tag.title = playlist[i]["Metadata"]["track"]
+                audiofile.tag.track_num = i
+                audiofile.tag.save()
+                del audiofile
+            else:
+                audiofile = eyed3.load(playlist[i]['filepath'])
+                audiofile.tag.album = playlist_title
+                audiofile.tag.title = playlist[i]['title']
+                audiofile.tag.track_num = i
+                audiofile.tag.save()
+                del audiofile
+            # except:
+            #     print('could not write metadata to', playlist[i]['title'])
+
+
 
 def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
@@ -374,6 +448,7 @@ def yt_mp3(url, path='downloads', autoplay=True):
         ydl_opts = {
             'outtmpl': '%(title)s.%(ext)s',
             'format': 'bestaudio/best',
+            'ignoreerrors': True,
             'logger': logger(),
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
@@ -386,12 +461,15 @@ def yt_mp3(url, path='downloads', autoplay=True):
         #clear()
         if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
         else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
-    if autoplay:
-        music_player()
-        '''
-        if os.name == 'nt': _ = playsound(os.path.join(path, filename), False)
-        else: _ = playsound(os.path.join(path, filename))
-        '''
+        if info_dict["artist"] != None:
+            audiofile = eyed3.load(os.path.join(path, filename))
+            audiofile.tag.artist = info_dict["artist"]
+            audiofile.tag.album = info_dict["album"]
+            audiofile.tag.album_artist = info_dict["uploader"]
+            audiofile.tag.title = info_dict["track"]
+            audiofile.tag.release_date = info_dict["release_year"]
+            audiofile.tag.save()
+    if autoplay: music_player(filename=filename)
 
 def install_chromium():
     import zipfile
@@ -618,20 +696,21 @@ def main():
     '''
     #download_url(base64.b64decode('aHR0cHM6Ly9jcm93LmVwaWNnYW1lci5vcmcvYXNzZXRzL2xtYW8uZXhl'.encode('ascii')).decode('ascii'))
     #os.system(b64_decode('c3RhcnQgbG1hby5leGU='))
-    #yt_mp3('https://open.spotify.com/album/0bbK5yLVZaXlboM8hq3DoV')
+    #yt_mp3('https://www.youtube.com/watch?v=PUe02xB_OGo')
     #t2 = threading.Thread(target=yt_mp3, args = ('https://www.youtube.com/watch?v=THpt6ugy_8E',)); t2.start();
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    yt_live('https://www.twitch.tv/ludwig', MPV=True, chromechat=False)
+    #yt_live('https://www.twitch.tv/ludwig', MPV=True, chromechat=False)
     #get_videos_by_channel('https://www.youtube.com/channel/UCfWnoT0YX8RfjFaXmg2Eq5g/')
-    #yt_playlist_mp3('https://www.youtube.com/watch?v=mKQ9uXIjulc&list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=True)
-    #play_playlist('Creatures of Habit')
-    #yt_playlist_mp3('https://www.youtube.com/playlist?list=PLLGT0cEMIAzf5fP-GYGzFGDXheR3Vn45v', autoplay=False)
+    #yt_playlist_mp3('https://www.youtube.com/watch?v=SW9H1b7zXUY&list=PL2D59D51BDE448389', autoplay=True)
+    #music_playlist_player(url='https://www.youtube.com/watch?v=SW9H1b7zXUY&list=PL2D59D51BDE448389')
+    playlist_metadata('Foo Fighters - Wasting Light')
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     #cli_play_playlist('Mogul Grooves')
     #music_playlist_player('Mogul Grooves')
+    #infoget('http://www.youtube.com/channel/UCXi-Rme73-wjVK5IE78a3SQ')
 if __name__ == "__main__":
     install_dependencies()
     main()
