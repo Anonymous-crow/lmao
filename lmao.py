@@ -334,6 +334,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
         'ignoreerrors': True,
         'logger': logger(),
         'format': 'bestaudio/best',
+        'noplaylist': False,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -437,7 +438,10 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
 def yt_mp3(url, path='downloads', autoplay=True):
     from playsound import playsound;
     if not os.path.isfile('ffmpeg.exe'):
-        os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
+        try:
+            os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
+        except:
+            return print("could not download ffmpeg.exe")
         clear()
     ydl_opts={}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -450,6 +454,7 @@ def yt_mp3(url, path='downloads', autoplay=True):
             'format': 'bestaudio/best',
             'ignoreerrors': True,
             'logger': logger(),
+            'noplaylist': True,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -701,11 +706,11 @@ def main():
     #print(parseimages_dict('downloads'))
     #typetext()
     #typetext2()
-    #yt_live('https://www.twitch.tv/ludwig', MPV=True, chromechat=False)
+    #yt_live('https://www.twitch.tv/itsryanhiga', MPV=True, chromechat=False)
     #get_videos_by_channel('https://www.youtube.com/channel/UCfWnoT0YX8RfjFaXmg2Eq5g/')
-    #yt_playlist_mp3('https://www.youtube.com/watch?v=SW9H1b7zXUY&list=PL2D59D51BDE448389', autoplay=True)
+    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLfiMjLyNWxebHOtWj9wUta14imWlIEuTZ', autoplay=True)
     #music_playlist_player(url='https://www.youtube.com/watch?v=SW9H1b7zXUY&list=PL2D59D51BDE448389')
-    playlist_metadata('Foo Fighters - Wasting Light')
+    #playlist_metadata('Foo Fighters - Wasting Light')
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     #cli_play_playlist('Mogul Grooves')

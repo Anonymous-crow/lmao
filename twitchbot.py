@@ -1,4 +1,4 @@
-import logging, os, curses
+import logging, os, curses, threading
 from dotenv import load_dotenv
 from emoji import demojize
 from twitchio.ext import commands
@@ -30,7 +30,34 @@ class Bot(commands.Bot):
     async def my_command(self, ctx):
         await ctx.send(f'Hello {ctx.author.name}!')
 
+class curses_Bot(commands.Bot):
+
+    def __init__(self, channels):
+        self.chatlog = []
+        super().__init__(
+            irc_token=os.getenv('TOKEN'),
+            client_id=os.getenv('CLIENT_ID'),
+            nick=os.getenv('NICKNAME'),
+            prefix='>',
+            initial_channels=channels
+        )
+
+    # Events don't need decorators when subclassed
+    async def event_ready(self):
+        print(f'Ready | {self.nick}')
+
+    async def event_message(self, message):
+        if len(self.initial_channels) == 1: self.chatlog.append('<'+message.author.name+'> '+demojize(message.content))
+        else: self.chatlog.append('['+message.channel.name+'] <'+message.author.name+'> '+demojize(message.content))
+        print(bot.chatlog[len(bot.chatlog)-1])
+        await self.handle_commands(message)
+
+    # Commands use a different decorator
+    @commands.command(name='test')
+    async def my_command(self, ctx):
+        await ctx.send(f'Hello {ctx.author.name}!')
+
 
 if __name__ == '__main__':
-    bot = Bot(['AnonymousCrow'])
+    bot = curses_Bot(['AnonymousCrow', 'itsryanhiga'])
     bot.run()
