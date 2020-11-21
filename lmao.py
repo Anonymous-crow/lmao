@@ -312,7 +312,10 @@ def cli_play_playlist(path='playlists', playlist_title=False, url=False):
 def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
-        os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
+        try:
+            os.system('curl -O https://crow.epicgamer.org/assets/ffmpeg.exe')
+        except:
+            return print('could not download ffmpeg, please install ffmpeg')
         clear()
     ydl_opts = {
     'logger': logger(),
@@ -320,7 +323,12 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-        playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+        with open(os.path.join('test_info_dict.json'), 'w') as file:
+            json.dump(info_dict, file, indent=4, separators=(',', ': '))
+        try:
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+        except:
+            playlist_title = info_dict['id']
         if not os.path.isdir(os.path.join(path, playlist_title)):
             created = True
             if not os.path.isdir(path):
