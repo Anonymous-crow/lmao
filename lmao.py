@@ -357,7 +357,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
     playlist = {}
-    if info_dict['extractor'] == "youtube:playlist":
+    if info_dict['extractor'] == "youtube:tab":
         for i in info_dict['entries']:
             if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
             else: metadata = None
@@ -716,14 +716,15 @@ def main():
     #typetext2()
     #yt_live('https://www.twitch.tv/itsryanhiga', MPV=True, chromechat=False)
     #get_videos_by_channel('https://www.youtube.com/channel/UCfWnoT0YX8RfjFaXmg2Eq5g/')
-    yt_playlist_mp3('https://www.youtube.com/playlist?list=PLfiMjLyNWxebHOtWj9wUta14imWlIEuTZ', autoplay=True)
+    #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_k12nU61mtYTc3VS3YErh5QD16eCtlLDxQ', autoplay=True)
+    playlist_metadata('ZABA')
     #music_playlist_player(url='https://www.youtube.com/watch?v=SW9H1b7zXUY&list=PL2D59D51BDE448389')
     #playlist_metadata('Foo Fighters - Wasting Light')
     #consoleTTS()
     #t1 = threading.Thread(target=downloadallaudio2,args = ('https://www.youtube.com/watch?v=dpAvnPI04-s',)); t1.start(); t1.join()
     #cli_play_playlist('Mogul Grooves')
     #music_playlist_player('Mogul Grooves')
-    #infoget('http://www.youtube.com/channel/UCXi-Rme73-wjVK5IE78a3SQ')
+    #infoget('https://www.youtube.com/watch?v=-bQhQ59TTtM')
 if __name__ == "__main__":
     install_dependencies()
     main()
