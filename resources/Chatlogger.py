@@ -47,15 +47,6 @@ def send_chat(nickname, token, channel):
     while True:
         sock.send((f'PRIVMSG #'+channel+' :'+input('message chat:\n')+'\r\n').encode('utf-8'))
 
-def send_msg_chat(message, nickname, token, channel):
-    sock = socket.socket()
-    sock.connect(('irc.chat.twitch.tv', 6667))
-    sock.send(f"PASS {token}\r\n".encode('utf-8'))
-    sock.send(f"NICK {nickname}\r\n".encode('utf-8'))
-    sock.send(f"JOIN #{channel}\r\n".encode('utf-8'))
-    while True:
-        sock.send((f'PRIVMSG #'+channel+' :'+input('message chat:\n')+'\r\n').encode('utf-8'))
-
 def chatmain():
     dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
     load_dotenv(dotenv_path)
@@ -63,7 +54,7 @@ def chatmain():
     token=os.getenv('TOKEN')
     print(nickname); print(token)
     channel = 'ludwig'
-    get_chat(nickname, token, channel)
+    send_chat(nickname, token, channel)
 
 if __name__ == '__main__':
     chatmain()
