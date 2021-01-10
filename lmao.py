@@ -1,8 +1,10 @@
 #from future import unicode_literals
-
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import logging, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
 
 def install_dependencies():
-    os.system('python -m pip install gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
+    os.system('python -m pip install windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 logging --user')
 
 def sec_t_timestamp(sec):
     import time
@@ -30,6 +32,8 @@ class logger():
     def error(self, msg):
         print(msg)
 
+logging.basicConfig(filename="log.log", level=logging.DEBUG)
+
 def b64_encode_img(imgpth):
     return base64.b64encode(open(imgpth, 'rb').read()).decode('utf-8')
 
@@ -47,23 +51,37 @@ def b64_encode(text):
 def b64_decode(text):
     return base64.b64decode(text.encode('ascii')).decode('ascii')
 
-def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename = False, overwrite = False, path = 'downloads'):
+def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename=False, overwrite=False, path='downloads'):
         if not filename:
             if not os.path.isdir(path): os.mkdir(path)
-            os.system('cd '+path+'&& curl -O ' + url + ' && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
+            os.system('cd '+path+'&& curl -O ' + url + ' --ssl-no-revoke && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
         else:
             if not os.path.isdir(path): os.mkdir(path)
-            if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear();
+            if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear();
             else:
                 while True:
-                    if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)); clear(); break
+                    if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear(); break
                     else: filename = filename.split('.')[0] + '(1).' + filename.split('.')[1]
 
 def install_ffmpeg():
-    import zipfile
+    #try:
+    #    os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe --ssl-no-revoke')
+    #except:
+    #    logging.warning('crow.epicgamer.org could not be reached')
+    downloadfile(url='https://www.7-zip.org/a/7z1604-extra.7z',path=os.path.join('resources','7z'))
+    logging.debug('downloaded 7z1604-extra.7z')
+    from pyunpack import Archive
+    if not os.path.isdir(os.path.join("resources","7z","7z1604-extra")): os.mkdir(os.path.join("resources","7z","7z1604-extra"))
+    try:
+        Archive(os.path.join('resources','7z','7z1604-extra.7z')).extractall(os.path.join("resources","7z","7z1604-extra"))
+    except:
+        logging.error('could not extract 7z1604-extra')
+    shutil.copyfile(os.path.join("resources","7z","7z1604-extra","7za.exe"), '7za.exe')
+    logging.debug('copied 7za.exe')
     downloadfile(url='https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-19-full_build.7z', path=os.path.join('resources','ffmpeg'))
-    with zipfile.ZipFile(os.path.join('resources','ffmpeg','ffmpeg-4.3.1-2020-11-19-full_build.7z'), 'r') as zip_ref:
-        zip_ref.extractall(os.path.join('resources','ffmpeg'))
+    os.system('7za x '+os.path.join('resources','ffmpeg','ffmpeg-4.3.1-2020-11-19-full_build.7z')+' -o'+os.path.join('resources','ffmpeg'))
+    shutil.copyfile(os.path.join("resources","ffmpeg","ffmpeg-4.3.1-2020-11-19-full_build","bin","ffmpeg.exe"), 'ffmpeg.exe')
+    logging.debug('copied ffmpeg.exe')
 
 
 
@@ -311,12 +329,31 @@ def cli_play_playlist(path='playlists', playlist_title=False, url=False):
                         print(pygame.mixer.music.get_busy())
             except:
                 print('there was an issue playing '+playlist[i][0])
+import subprocess
+def execute_cmc(command):
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+
+    # Poll process for new output until finished
+    #while True:
+    nextline = process.stdout.readline()
+    # if nextline == '' and process.poll() != None:
+    #     pass
+    sys.stdout.write(nextline.decode('utf-8'))
+    #sys.stdout.flush()
+
+    output = process.communicate()[0]
+    exitCode = process.returncode
+
+    if (exitCode == 0):
+        return str(output).strip("\n","b''")
+    else:
+        raise ProcessException(command, exitCode, output)
 
 def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
         try:
-            os.system('curl -O https://crow.epicgamer.org/assets/ffmpeg.exe')
+            install_ffmpeg()
         except:
             return print('could not download ffmpeg, please install ffmpeg')
         clear()
@@ -364,28 +401,28 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             else: metadata = None
             filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
             playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
-            #try:
-            if metadata != None:
-                if metadata["album"] == None: Albumname = playlist_title
-                else: Albumname = metadata["album"]
-                audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                audiofile.tag.artist = metadata["artist"]
-                audiofile.tag.album = Albumname
-                audiofile.tag.album_artist = metadata["artist"]
-                audiofile.tag.title = metadata["track"]
-                audiofile.tag.track_num = i['playlist_index']
-                audiofile.tag.release_date = i["release_year"]
-                audiofile.tag.save()
-                del audiofile
-            else:
-                audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                audiofile.tag.album = info_dict['title']
-                audiofile.tag.title = i['title']
-                audiofile.tag.track_num = i['playlist_index']
-                audiofile.tag.save()
-                del audiofile
-            #except:
-            #    print('could not write metadata to ', i['title'])
+            try:
+                if metadata != None:
+                    if metadata["album"] == None: Albumname = playlist_title
+                    else: Albumname = metadata["album"]
+                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    audiofile.tag.artist = metadata["artist"]
+                    audiofile.tag.album = Albumname
+                    audiofile.tag.album_artist = metadata["artist"]
+                    audiofile.tag.title = metadata["track"]
+                    audiofile.tag.track_num = i['playlist_index']
+                    audiofile.tag.release_date = i["release_year"]
+                    audiofile.tag.save()
+                    del audiofile
+                else:
+                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    audiofile.tag.album = info_dict['title']
+                    audiofile.tag.title = i['title']
+                    audiofile.tag.track_num = i['playlist_index']
+                    audiofile.tag.save()
+                    del audiofile
+            except:
+                print('could not write metadata to ', i['title'])
     if info_dict['extractor'] == "soundcloud:set":
         for i in info_dict['entries']:
             metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
@@ -421,6 +458,19 @@ def yt_playlist_mp3_menu(lmao=''):
     if overwrite == 'n': overwrite = False
     yt_playlist_mp3(url, path=path, autoplay=autoplay, overwrite=overwrite)
 
+def album_art_folder(playlist_title=False, url=False, path='playlists'):
+    if not playlist_title and not url: return print('please pass a url or playlist title')
+    if playlist_title and url: return print('please do not pass both a url and playlist title')
+    if url:
+        ydl_opts = {}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+    if playlist_title:
+        import get_cover_art
+        finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':True})
+        finder.scan_folder(os.path.join(path, playlist_title))
+
 def playlist_metadata(playlist_title=False, url=False, path='playlists'):
     if not playlist_title and not url: return print('please pass a url or playlist title')
     if playlist_title and url: return print('please do not pass both a url and playlist title')
@@ -428,7 +478,6 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
         ydl_opts = {}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
-            print(info_dict)
             playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
     if playlist_title:
         with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
@@ -436,28 +485,32 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
         with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'r') as file:
             info_dict = json.load(file)
         for i in playlist:
-            Albumname = playlist[i]["Metadata"]["album"]
-            if Albumname == None:
+            if playlist[i]["Metadata"]["album"] == None:
                 Albumname = playlist_title
-            #try:
-            if playlist[i]["Metadata"] != None:
-                audiofile = eyed3.load(playlist[i]['filepath'])
-                audiofile.tag.artist = playlist[i]["Metadata"]["artist"]
-                audiofile.tag.album = Albumname
-                audiofile.tag.album_artist = playlist[i]["Metadata"]["album_artist"]
-                audiofile.tag.title = playlist[i]["Metadata"]["track"]
-                audiofile.tag.track_num = i
-                audiofile.tag.save()
-                del audiofile
             else:
-                audiofile = eyed3.load(playlist[i]['filepath'])
-                audiofile.tag.album = playlist_title
-                audiofile.tag.title = playlist[i]['title']
-                audiofile.tag.track_num = i
-                audiofile.tag.save()
-                del audiofile
-            # except:
-            #     print('could not write metadata to', playlist[i]['title'])
+                Albumname = playlist[i]["Metadata"]["album"]
+            try:
+                if playlist[i]["Metadata"] != None:
+                    audiofile = eyed3.load(playlist[i]['filepath'])
+                    audiofile.tag.artist = playlist[i]["Metadata"]["artist"]
+                    audiofile.tag.album = Albumname
+                    audiofile.tag.album_artist = playlist[i]["Metadata"]["album_artist"]
+                    audiofile.tag.title = playlist[i]["Metadata"]["track"]
+                    audiofile.tag.track_num = i
+                    audiofile.tag.save()
+                    del audiofile
+                else:
+                    audiofile = eyed3.load(playlist[i]['filepath'])
+                    audiofile.tag.album = playlist_title
+                    audiofile.tag.title = playlist[i]['title']
+                    audiofile.tag.track_num = i
+                    audiofile.tag.save()
+                    del audiofile
+            except:
+                logging.error('could not write metadata to', playlist[i]['title'])
+        import get_cover_art
+        finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':True})
+        finder.scan_folder(os.path.join(path, playlist_title))
 
 
 def yt_mp3(url, path='downloads', autoplay=True):
@@ -723,10 +776,6 @@ def typetext2():
         pygame.display.update()
     pygame.quit()
 
-def import_lib():
-    os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-    import base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio
-
 def menu():
     import sys
     arg = None; arglist = []; argopts = []
@@ -737,7 +786,6 @@ def menu():
         return print('LMAO.PY\n\nuhhhhhh cant help you just look in the code or something, just run with -i to install dependencies')
     if 'i' in arglist:
         install_dependencies()
-    import_lib()
     if 'g' in arglist:
         ytargopts = []
         for i in argopts:
@@ -750,6 +798,8 @@ def menu():
         if len(ytargopts)==0: return yt_mp3_menu()
         for i in ytargopts:
             k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
             ytarguments[k] = v
         return yt_mp3(**ytarguments)
     if 'yp' in arglist or '-youtube_mp3_playlist' in arglist:
@@ -759,16 +809,43 @@ def menu():
         if len(ypargopts)==0: return yt_playlist_mp3_menu()
         for i in ypargopts:
             k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
             yparguments[k] = v
         return yt_playlist_mp3(**yparguments)
     if '-playlist_metadata' in arglist:
         pmargopts = []; pmarguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
         for i in argopts:
-            if i[0] == 'yp': pmargopts.append(i[1])
+            if i[0] == '-playlist_metadata': pmargopts.append(i[1])
         for i in pmargopts:
             k,v = i.split('=',1)
-            pmargopts[k] = v
-        return playlist_metadata(**pmargopts)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            pmarguments[k] = v
+        return playlist_metadata(**pmarguments)
+    if 'aa' in arglist:
+        aaargopts = []; aaarguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
+        for i in argopts:
+            if i[0] == 'aa': aaargopts.append(i[1])
+        for i in aaargopts:
+            k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            aaarguments[k] = v
+        return album_art_folder(**aaarguments)
+    if 'pp' in arglist:
+        ppargopts = []; pparguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
+        for i in argopts:
+            if i[0] == 'pp': ppargopts.append(i[1])
+        for i in ppargopts:
+            k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            pparguments[k] = v
+        return music_playlist_player(**pparguments)
+    if len(arglist) == 0:
+        import MenuLibrary
+        MenuLibrary.main()
 
 def parse_args(argv):
     import getopt
@@ -793,11 +870,13 @@ def parse_args(argv):
 
 
 def main():
+    import os
+    os.system('color a')
+    typetext()
     #yt_mp3()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
     #yt_live('https://twitch.tv/ludwig')
-    install_ffmpeg()
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_m0caEe_OxtoII-A3qucyav_776n7-HQ7M', autoplay=True)
     #downloadfile("https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", overwrite=True, filename="alice.png")
     '''
@@ -808,7 +887,5 @@ def main():
     #download_url(base64.b64decode('aHR0cHM6Ly9jcm93LmVwaWNnYW1lci5vcmcvYXNzZXRzL2xtYW8uZXhl'.encode('ascii')).decode('ascii'))
 
 if __name__ == "__main__":
-    import os
-    os.system('color a')
-    menu()
     main()
+    menu()
