@@ -4,7 +4,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import logging, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
 
 def install_dependencies():
-    os.system('python -m pip install windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 logging --user')
+    os.system('python -m pip install windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
 
 def sec_t_timestamp(sec):
     import time
@@ -32,7 +32,7 @@ class logger():
     def error(self, msg):
         print(msg)
 
-logging.basicConfig(filename="log.log", level=logging.DEBUG)
+logging.basicConfig(filename="info.log", level=logging.INFO)
 
 def b64_encode_img(imgpth):
     return base64.b64encode(open(imgpth, 'rb').read()).decode('utf-8')
@@ -51,25 +51,32 @@ def b64_encode(text):
 def b64_decode(text):
     return base64.b64decode(text.encode('ascii')).decode('ascii')
 
-def downloadfile(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename=False, overwrite=False, path='downloads'):
+def downloadfile_curl(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename=False, overwrite=False, path='downloads'):
         if not filename:
-            if not os.path.isdir(path): os.mkdir(path)
+            if not os.path.isdir(path): os.makedirs(path)
             os.system('cd '+path+'&& curl -O ' + url + ' --ssl-no-revoke && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
         else:
-            if not os.path.isdir(path): os.mkdir(path)
+            if not os.path.isdir(path): os.makedirs(path)
             if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear();
             else:
                 while True:
                     if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear(); break
                     else: filename = filename.split('.')[0] + '(1).' + filename.split('.')[1]
 
+def dl_file(url, filename, path=''):
+    import requests
+    x = requests.get(url)
+    if path=='':
+        with open(filename, 'wb') as file:
+            file.write(x.content); file.close()
+    else:
+        if not os.path.isdir(path): os.makedirs(path)
+        with open(os.path.join(path,filename), 'wb') as file:
+            file.write(x.content); file.close()
+
 def install_ffmpeg():
-    #try:
-    #    os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe --ssl-no-revoke')
-    #except:
-    #    logging.warning('crow.epicgamer.org could not be reached')
-    downloadfile(url='https://www.7-zip.org/a/7z1604-extra.7z',path=os.path.join('resources','7z'))
-    logging.debug('downloaded 7z1604-extra.7z')
+    dl_file(url='https://www.7-zip.org/a/7z1604-extra.7z',path=os.path.join('resources','7z'),filename='7z1604-extra.7z')
+    logging.info('downloaded 7z1604-extra.7z')
     from pyunpack import Archive
     if not os.path.isdir(os.path.join("resources","7z","7z1604-extra")): os.mkdir(os.path.join("resources","7z","7z1604-extra"))
     try:
@@ -77,12 +84,12 @@ def install_ffmpeg():
     except:
         logging.error('could not extract 7z1604-extra')
     shutil.copyfile(os.path.join("resources","7z","7z1604-extra","7za.exe"), '7za.exe')
-    logging.debug('copied 7za.exe')
-    downloadfile(url='https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-19-full_build.7z', path=os.path.join('resources','ffmpeg'))
+    logging.info('copied 7za.exe')
+    dl_file(url='https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-19-full_build.7z', filename='ffmpeg-4.3.1-2020-11-19-full_build.7z',path=os.path.join('resources','ffmpeg'))
     os.system('7za x '+os.path.join('resources','ffmpeg','ffmpeg-4.3.1-2020-11-19-full_build.7z')+' -o'+os.path.join('resources','ffmpeg'))
-    shutil.copyfile(os.path.join("resources","ffmpeg","ffmpeg-4.3.1-2020-11-19-full_build","bin","ffmpeg.exe"), 'ffmpeg.exe')
-    logging.debug('copied ffmpeg.exe')
-
+    if not os.path.isfile('ffmpeg.exe'):
+        shutil.copyfile(os.path.join("resources","ffmpeg","ffmpeg-4.3.1-2020-11-19-full_build","bin","ffmpeg.exe"), 'ffmpeg.exe')
+        logging.info('copied ffmpeg.exe')
 
 
 def infoget(url):
@@ -329,8 +336,9 @@ def cli_play_playlist(path='playlists', playlist_title=False, url=False):
                         print(pygame.mixer.music.get_busy())
             except:
                 print('there was an issue playing '+playlist[i][0])
-import subprocess
+
 def execute_cmc(command):
+    import subprocess
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 
     # Poll process for new output until finished
@@ -513,11 +521,11 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
         finder.scan_folder(os.path.join(path, playlist_title))
 
 
-def yt_mp3(url, path='downloads', autoplay=True):
+def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
     from playsound import playsound;
     if not os.path.isfile('ffmpeg.exe'):
         try:
-            os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
+            install_ffmpeg()
         except:
             return print("could not download ffmpeg.exe")
         clear()
@@ -570,26 +578,33 @@ def install_chromium():
     if not os.path.isdir('resources\\chromium'):
         os.mkdir('resources\\chromium')
         if os.name == 'nt':
-            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/813604/chrome-win.zip')
+            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/813604/chrome-win.zip --ssl-no-revoke')
         if os.name == 'nt':
             with zipfile.ZipFile('resources\\chromium\\chrome-win.zip', 'r') as zip_ref:
                 zip_ref.extractall('resources\\chromium')
             os.remove("resources\\chromium\\chrome-win.zip")
-        if os.name == 'nt':
-            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/813606/chrome-linux.zip')
-        if os.name == 'nt':
+        if os.name == 'posix':
+            os.system('cd resources\\chromium && curl -O https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/813606/chrome-linux.zip --ssl-no-revoke')
+        if os.name == 'posix':
             with zipfile.ZipFile(os.path.join('resources','chromium','chrome-linux.zip'), 'r') as zip_ref:
                 zip_ref.extractall(os.path.join('resources','chromium'))
             os.remove(os.path.join("resources","chromium","chrome-linux.zip"))
 
+def install_mpv():
+    if not os.path.isfile('resources\\mpv\\mpv.exe'):
+        dl_file(url='https://pilotfiber.dl.sourceforge.net/project/mpv-player-windows/bootstrapper.zip', path=os.path.join('resources', 'mpv'),filename='bootstrapper.zip')
+        import zipfile
+        with zipfile.ZipFile(os.path.join('resources', 'mpv','bootstrapper.zip'), 'r') as zip_ref:
+            zip_ref.extractall(os.path.join('resources', 'mpv'))
+        os.system(os.path.join('resources', 'mpv','updater.bat /WAIT'))
+
+
 def yt_live(url, autoplay=True, MPV=True, chromechat=False):
     from playsound import playsound; import sys
     if not os.path.isfile('ffmpeg.exe'):
-        os.system('curl https://crow.epicgamer.org/assets/ffmpeg.exe --output ffmpeg.exe')
-        clear()
+        install_ffmpeg()
     install_chromium()
     ydl_opts={}
-
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
@@ -607,27 +622,35 @@ def yt_live(url, autoplay=True, MPV=True, chromechat=False):
                     if info_dict["extractor"]=='twitch:stream':
                         os.system('start resources/chromium/chrome-linux/chrome --app=https://www.twitch.tv/popout/'+info_dict['webpage_url_basename']+'/chat?popout=')
             if os.name == 'nt':
-                if not os.path.isfile('resources\\mpv\\mpv.exe'):
-                    if not os.path.isdir('resources'):
-                        os.mkdir('resources')
-                        if not os.path.isdir('resources\\mpv'): os.mkdir('resources\\mpv')
-                    os.system('curl https://crow.epicgamer.org/assets/updater.bat --output '+os.path.join('resources', 'mpv','updater.bat'))
-                    os.system('curl https://crow.epicgamer.org/assets/updater.ps1 --output '+os.path.join('resources','mpv','updater.ps1'))
-                    os.system('resources\\mpv\\updater.bat /WAIT')
+                install_mpv()
                 os.system('start resources\\mpv\\mpv.exe '+info_dict["url"])
             else:
                 os.system('mpv '+info_dict["url"])
             if not chromechat:
+                os.system('start lmao.py --sendtwitchchat channel='+info_dict['webpage_url_basename'])
                 import twitchbot
                 bot = twitchbot.Bot([info_dict['webpage_url_basename']])
                 bot.run()
         if not MPV:
             os.system('start chrome --app='+info_dict['webpage_url'])
 
+def sendtwitchchat(channel):
+    import Chatlogger
+    Chatlogger.chatmain(channel)
 
-
-
-        #clear()
+def yt_live_menu():
+    autoplay = True; MPV=True; chromechat=False; url=None
+    url = input('Enter URL of livestream: '); MPV = input('MPV?[y]: '); chromechat = input('Chromechat?[n]: '); autoplay = input('Autoplay?[y]: ')
+    if autoplay == '': autoplay = True
+    elif autoplay == 'y': autoplay = True
+    elif autoplay == 'n': autoplay = False
+    if MPV == '': MPV = True
+    elif MPV == 'y': MPV = True
+    elif MPV == 'n': MPV = False
+    if chromechat == '': chromechat = False
+    elif chromechat == 'y': chromechat = True
+    elif chromechat == 'n': chromechat = False
+    yt_live(url, autoplay, MPV, chromechat)
 
 def Followinge(url):
     ydl_opts = {}
@@ -843,37 +866,37 @@ def menu():
             if v == 'False': v=False
             pparguments[k] = v
         return music_playlist_player(**pparguments)
+    if 'yl' in arglist:
+        ylargopts = []; ylarguments = {'autoplay':True, 'MPV':True, 'chromechat':False}
+        for i in argopts:
+            if i[0] == 'yl': ylargopts.append(i[1])
+        if len(ylargopts)==0: return yt_live_menu()
+        for i in ylargopts:
+            k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            ylarguments[k] = v
+        return yt_live(**ylarguments)
+    if '-sendtwitchchat' in arglist:
+        sendtwitchchatargopts = []; sendtwitchchatarguments = {}
+        for i in argopts:
+            if i[0] == '-sendtwitchchat': sendtwitchchatargopts.append(i[1])
+        for i in sendtwitchchatargopts:
+            k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            sendtwitchchatarguments[k] = v
+        return sendtwitchchat(**sendtwitchchatarguments)
     if len(arglist) == 0:
         import MenuLibrary
         MenuLibrary.main()
-
-def parse_args(argv):
-    import getopt
-    inputfile = ''
-    outputfile = ''
-    try:
-        opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
-    except getopt.GetoptError:
-        print('you did it wrong dumbfuck')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print ('lmao.py \n -yt <playlist>')
-            sys.exit()
-        elif opt in ("-i", "--ifile"):
-            inputfile = arg
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
-    print ('Input file is "', inputfile)
-    print ('Output file is "', outputfile)
 
 
 
 def main():
     import os
     os.system('color a')
-    typetext()
-    #yt_mp3()
+    #typetext()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
     #yt_live('https://twitch.tv/ludwig')

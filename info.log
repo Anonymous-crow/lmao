@@ -1,0 +1,49 @@
+INFO:root:downloaded 7z1604-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:root:downloaded 7z1604-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:root:downloaded 7z1604-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1604-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:root:downloaded 7z1604-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Websocket closed: Retrying connection in 1.454518620596839 seconds...
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+ERROR:asyncio:Task exception was never retrieved
+future: <Task finished name='Task-16' coro=<WebsocketConnection.auth_seq() done, defined at C:\Users\elven\AppData\Roaming\Python\Python39\site-packages\twitchio\websocket.py:200> exception=KeyError('jacksepticeye')>
+Traceback (most recent call last):
+  File "C:\Python39\lib\asyncio\tasks.py", line 489, in wait_for
+    fut.result()
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\elven\AppData\Roaming\Python\Python39\site-packages\twitchio\websocket.py", line 280, in _join_channel
+    await asyncio.wait_for(fut, timeout=10)
+  File "C:\Python39\lib\asyncio\tasks.py", line 491, in wait_for
+    raise exceptions.TimeoutError() from exc
+asyncio.exceptions.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\elven\AppData\Roaming\Python\Python39\site-packages\twitchio\websocket.py", line 228, in auth_seq
+    await self.join_channels(*channels)
+  File "C:\Users\elven\AppData\Roaming\Python\Python39\site-packages\twitchio\websocket.py", line 271, in join_channels
+    await asyncio.gather(*[self._join_channel(x) for x in channels])
+  File "C:\Users\elven\AppData\Roaming\Python\Python39\site-packages\twitchio\websocket.py", line 282, in _join_channel
+    self._pending_joins.pop(channel)
+KeyError: 'jacksepticeye'
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow

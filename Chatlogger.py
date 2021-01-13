@@ -47,14 +47,13 @@ def send_chat(nickname, token, channel):
     while True:
         sock.send((f'PRIVMSG #'+channel+' :'+input('message chat:\n')+'\r\n').encode('utf-8'))
 
-def chatmain():
-    dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+def chatmain(channel):
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(dotenv_path)
     nickname=os.getenv('NICKNAME')
     token=os.getenv('TOKEN')
-    print(nickname); print(token)
-    channel = 'ludwig'
+    print(nickname, channel)
     send_chat(nickname, token, channel)
 
 if __name__ == '__main__':
-    chatmain()
+    chatmain("jacksepticeye")
