@@ -1,4 +1,4 @@
-import logging, os, curses, threading
+import logging, os, curses, threading, sys
 from dotenv import load_dotenv
 from emoji import demojize
 from twitchio.ext import commands
@@ -15,6 +15,7 @@ class Bot(commands.Bot):
             prefix='>',
             initial_channels=channels
         )
+        sys.tracebacklimit = 0
 
     # Events don't need decorators when subclassed
     async def event_ready(self):

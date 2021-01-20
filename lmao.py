@@ -65,7 +65,8 @@ def downloadfile_curl(url = "https://raw.githubusercontent.com/Anonymous-crow/Di
 
 def dl_file(url, filename, path=''):
     import requests
-    x = requests.get(url)
+    headers = requests.utils.default_headers()
+    x = requests.get(url, headers=headers)
     if path=='':
         with open(filename, 'wb') as file:
             file.write(x.content); file.close()
@@ -357,7 +358,7 @@ def execute_cmc(command):
     else:
         raise ProcessException(command, exitCode, output)
 
-def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists'):
+def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
         try:
@@ -382,19 +383,26 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             os.mkdir(os.path.join(path, playlist_title))
         with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
             json.dump(info_dict, file, indent=4, separators=(',', ': '))
-    ydl_opts = {
-        'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
-        'nooverwrites': overwrite,
-        'ignoreerrors': True,
-        'logger': logger(),
-        'format': 'bestaudio/best',
-        'noplaylist': False,
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-    }
+    if format == 'mp3':
+        ydl_opts = {
+            'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
+            'nooverwrites': overwrite,
+            'ignoreerrors': True,
+            'logger': logger(),
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+    else:
+        ydl_opts = {
+            'outtmpl': '%(title)s.%(ext)s',
+            'format': format,
+            'ignoreerrors': True,
+            'logger': logger(),
+        }
     if created:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -534,19 +542,28 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
         info_dict = ydl.extract_info(url, download=False)
         video_title=info_dict['title'].replace(':', ' -')
     filename = video_title + ".mp3"
-    if not os.path.isfile(os.path.join(path, filename)):
-        ydl_opts = {
-            'outtmpl': '%(title)s.%(ext)s',
-            'format': 'bestaudio/best',
-            'ignoreerrors': True,
-            'logger': logger(),
-            'noplaylist': True,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
+    if format=='mp3':
+        if not os.path.isfile(os.path.join(path, filename)):
+            ydl_opts = {
+                'outtmpl': '%(title)s.%(ext)s',
+                'format': 'bestaudio/best',
+                'ignoreerrors': True,
+                'logger': logger(),
+                'noplaylist': True,
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+            }
+        else:
+            ydl_opts = {
+                'outtmpl': '%(title)s.%(ext)s',
+                'format': format,
+                'ignoreerrors': True,
+                'logger': logger(),
+                'noplaylist': True,
+            }
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         #clear()

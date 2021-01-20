@@ -5,6 +5,7 @@
 *.dylib
 *.env
 *.mp3
+*.pyc
 
 # Dependency directories (remove the comment below to include it)
 resources/chromium
