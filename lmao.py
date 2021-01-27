@@ -158,7 +158,8 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
                     pygame.mixer.music.play()
             except:
                 print('There was a problem playing '+title)
-            while pygame.mixer.music.get_busy() and lmao:
+            paused=False; song_playing=True
+            while song_playing and lmao:
                 # stay in this loop till the user presses 'q'
                 songpos = pygame.mixer.music.get_pos()/1000
                 x_w, y_w = stdscr.getmaxyx()
@@ -175,10 +176,10 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
                     lmao=0
                     break
                 if ch == ord('s'): pygame.mixer.music.stop(); break
-                if ch == ord('p'): pygame.mixer.music.unpause()
-                if ch == ord('o'): pygame.mixer.music.pause()
-                if ch == ord('.'): pygame.mixer.music.unpause()
-                if ch == ord(','): pygame.mixer.music.pause()
+                if ch == ord('p'): pygame.mixer.music.unpause(); paused=False
+                if ch == ord('o'): pygame.mixer.music.pause(); paused=True
+                if ch == ord('.'): pygame.mixer.music.unpause(); paused=False
+                if ch == ord(','): pygame.mixer.music.pause(); paused=True
                 if ch == ord('w'): pygame.mixer.music.set_pos(180)
                 if ch == curses.KEY_UP:
                     if vol<1: vol+=0.1
@@ -187,6 +188,10 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
                     if vol>0: vol-=0.1
                     pygame.mixer.music.set_volume(vol)
                 stdscr.refresh()
+                if not pygame.mixer.music.get_busy() and not paused:
+                    song_playing=False
+                else:
+                    song_playing=True
 
         # --- Cleanup on exit ---
         pygame.mixer.music.stop()
@@ -413,6 +418,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
     playlist = {}
     if info_dict['extractor_key'] == "YoutubeTab":
         for i in info_dict['entries']:
+            if i == None:
+                continue
             if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
             else: metadata = None
             filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
@@ -478,7 +485,7 @@ def album_art_folder(playlist_title=False, url=False, path='playlists'):
     if not playlist_title and not url: return print('please pass a url or playlist title')
     if playlist_title and url: return print('please do not pass both a url and playlist title')
     if url:
-        ydl_opts = {}
+        ydl_opts = {'ignoreerrors': True}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
             playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
@@ -853,10 +860,10 @@ def menu():
             if v == 'False': v=False
             yparguments[k] = v
         return yt_playlist_mp3(**yparguments)
-    if '-playlist_metadata' in arglist:
+    if 'pm' in arglist or '-playlist_metadata' in arglist:
         pmargopts = []; pmarguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
         for i in argopts:
-            if i[0] == '-playlist_metadata': pmargopts.append(i[1])
+            if i[0]=='pm' or i[0] == '-playlist_metadata': pmargopts.append(i[1])
         for i in pmargopts:
             k,v = i.split('=',1)
             if v == 'True': v=True
@@ -916,7 +923,7 @@ def main():
     #typetext()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
-    #yt_live('https://twitch.tv/ludwig')
+    #yt_live('https://www.twitch.tv/hasanabi')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_m0caEe_OxtoII-A3qucyav_776n7-HQ7M', autoplay=True)
     #downloadfile("https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", overwrite=True, filename="alice.png")
     '''

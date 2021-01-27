@@ -6,6 +6,8 @@
 *.env
 *.mp3
 *.pyc
+*.m4a
+*.webm
 
 # Dependency directories (remove the comment below to include it)
 resources/chromium

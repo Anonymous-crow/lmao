@@ -78,3 +78,8 @@ Traceback (most recent call last):
 KeyError: 'moistcr1tikal'
 INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
 INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Websocket closed: Retrying connection in 1.5809780275120269 seconds...
+INFO:twitchio.websocket:Websocket closed: Retrying connection in 1.6412912116212577 seconds...
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
+INFO:twitchio.websocket:Successfully logged onto Twitch WS | anonymouscrow
