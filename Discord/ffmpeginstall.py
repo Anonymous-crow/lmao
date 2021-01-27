@@ -19,7 +19,7 @@ def install():
     try:
         Archive(os.path.join('resources','7z','7z1604-extra.7z')).extractall(os.path.join("resources","7z","7z1604-extra"))
     except:
-        logging.error('could not extract 7z1604-extra')
+        print('could not extract 7z1604-extra')
     shutil.copyfile(os.path.join("resources","7z","7z1604-extra","7za.exe"), '7za.exe')
     # logging.info('copied 7za.exe')
     dl_file(url='https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-19-full_build.7z', filename='ffmpeg-4.3.1-2020-11-19-full_build.7z',path=os.path.join('resources','ffmpeg'))
