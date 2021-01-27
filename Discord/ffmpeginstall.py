@@ -1,3 +1,4 @@
+import os
 def dl_file(url, filename, path=''):
     import requests
     headers = requests.utils.default_headers()
