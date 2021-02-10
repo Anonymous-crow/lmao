@@ -24,6 +24,12 @@ def main():
     ytmenu_item = SubmenuItem("YT", submenu=ytmenu)
     ytmenu_item.set_menu(menu)
 
+    playermenu = CursesMenu("Music Player", "Play Music")
+    player1 = CommandItem("Playlist Player", 'lmao.py -pp')
+    playermenu.append_item(player1)
+    playermenu_item = SubmenuItem("Music Player", submenu=playermenu)
+    playermenu_item.set_menu(menu)
+
     optmenu = CursesMenu("OPTIONS", "")
     install_dependencies = CommandItem("INSTALL DEPENDENCIES", 'lmao.py -i')
     optmenu.append_item(install_dependencies)
@@ -32,13 +38,22 @@ def main():
 
     menu.append_item(submenu_item)
     menu.append_item(ytmenu_item)
+    menu.append_item(playermenu_item)
     menu.append_item(optmenu_item)
 
-    menu.start()
-    menu.join()
-    #menu.show()
+    # menu.start()
+    # menu.join()
+    menu.show()
+
+def makemenu(list, title='Please Select One'):
+    menu = SelectionMenu(list, title=title, show_exit_option=False)
+    # try:
+    #     rtnvalue=
+    # except:
+    #     return None
+    return list[menu.get_selection(list, title=title, exit_option=False)]
+
 
 if __name__ == "__main__":
     os.system('color a')
     main()
-    print('lmaoooooo')
