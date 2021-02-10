@@ -1,7 +1,7 @@
 #from future import unicode_literals
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import logging, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
+import logging, random, time, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
 
 def install_dependencies():
     os.system('python -m pip install windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
@@ -106,9 +106,8 @@ def infoget(url):
         json.dump(info_dict, file, indent=4, separators=(',', ': '))
     print(info_dict)
 
-def music_playlist_player(playlist_title=False, url=False, path='playlists'):
+def music_playlist_player(playlist_title=False, url=False, path='playlists', askshuffle=True):
     import curses, traceback
-    clear()
     pygame.mixer.init()
     if not playlist_title and not url:
         return print('please pass a url or playlist title')
@@ -127,9 +126,22 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
 
 
         lmao = 1
+        if askshuffle:
+            import MenuLibrary as ML
+            shufflemenu = ML.makemenu(['Yes', 'No', 'Cancel'],'Shuffle Playlist?')
+            if shufflemenu == 'Yes': shuffled = True
+            elif shufflemenu == 'No': shuffled = False
+            elif shufflemenu == 'Cancel': return 0
+        else:
+            shuffled = False
+        # while True:
+        #     resp = input(" shuffle playlist?[y]\n")
+        #     if resp == 'y' or resp == '': shuffled = True; break
+        #     elif resp == 'n': shuffled = False; break
+
         try:
             # -- Initialize --
-            vol=1
+            vol=0.5
             stdscr = curses.initscr()   # initialize curses screen
             x_w, y_w = stdscr.getmaxyx()
             curses.noecho()             # turn off auto echoing of keypress on to screen
@@ -144,13 +156,18 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
             curses.nocbreak()
             curses.endwin()
             return print('error initalising curses')
-
+        songlist=[]
+        history=[]
         for i in playlist:
+            songlist.append(str(i))
+        if shuffled: random.shuffle(songlist)
+        while len(songlist) > 0:
+            i = songlist.pop(0); history.append(i)
             filename = playlist[i]['filename'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
             title = playlist[i]['title']; legnth_s=playlist[i]['duration']; legnth=sec_t_timestamp(legnth_s)
             if playlist[i]['Metadata'] != None:
                 title = playlist[i]['Metadata']['track'] + ' by ' + playlist[i]['Metadata']['artist']
-            clear()
+
             try:
                 if lmao:
                     pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
@@ -158,40 +175,90 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
                     pygame.mixer.music.play()
             except:
                 print('There was a problem playing '+title)
+            y_w, x_w = stdscr.getmaxyx()
+            nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
+            playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
+            ctrlwin = curses.newwin( 3, 0, int(y_w)-3, 0)
             paused=False; song_playing=True
             while song_playing and lmao:
+                stdscr.clear()
                 # stay in this loop till the user presses 'q'
                 songpos = pygame.mixer.music.get_pos()/1000
-                x_w, y_w = stdscr.getmaxyx()
-                stdscr.clear()
-                stdscr.border(0)
-                stdscr.addstr(1, 1, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
-                stdscr.addstr(2, 1, 'Now Playing Song '+i+': '+title, curses.A_NORMAL)
-                stdscr.addstr(3, 1, sec_t_timestamp(songpos)+'----'+legnth, curses.A_NORMAL)
-                stdscr.addstr(4, 1, 'volume: '+str(int(vol*100))+'%', curses.A_NORMAL)
-                stdscr.addstr(int(x_w-1), 1, 'Press q to quit, s to skip, o to pause, p to play', curses.A_NORMAL)
+                y_wv, x_wv = stdscr.getmaxyx()
+                if not y_wv == y_w or not x_wv == x_w:
+                    y_w = y_wv; x_w = x_wv
+                    nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
+                    playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
+                    ctrlwin = curses.newwin( 3, 0, int(y_w)-3, 0)
+                nopwin.clear()
+                playwin.clear()
+                ctrlwin.clear()
+                nopwin.box()
+                playwin.box()
+                ctrlwin.box()
+                lne = 0
+                for j in playlist:
+                    lne +=1
+                    if j == i:
+                        np = '*'
+                    else:
+                        np = ' '
+                    try:
+                        if playlist[j]["Metadata"] != None:
+                            playwin.addstr(lne, 1, np+playlist[j]["Metadata"]["track"], curses.A_NORMAL)
+                        else:
+                            playwin.addstr(lne, 1, np+playlist[j]["title"], curses.A_NORMAL)
+                    except:
+                        pass
+                nopwin.addstr(1, 2, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
+                nopwin.addstr(2, 2, 'Now Playing Song '+i+':', curses.A_NORMAL)
+                nopwin.addstr(3, 2, title, curses.A_NORMAL)
+                nopwin.addstr(4, 2, sec_t_timestamp(songpos)+'----'+legnth, curses.A_NORMAL)
+                nopwin.addstr(5, 2, 'volume: '+str(int(vol*100))+'%', curses.A_NORMAL)
+                if shuffled:
+                    shufflestatus = 'ON'
+                if not shuffled:
+                    shufflestatus = 'OFF'
+                # ctrlwin.addstr(1, 1, 'Press q to quit, s to skip, a to go back one song, o to pause, p to play, e to toggle shuffle (shuffle is '+shufflestatus+')', curses.A_NORMAL)
+                try:
+                    ctrlwin.addstr(1, 1, 'Press q to quit, s to skip, a to go back one song, o to pause, p to play, e to toggle shuffle (shuffle is '+shufflestatus+')', curses.A_NORMAL)
+                except:
+                    ctrlwin.addstr(1, 1, 'q, s, a, o, p, e, '+shufflestatus, curses.A_NORMAL)
+
+                # # nopwin.addstr(int(x_w-1), 1, 'Press q to quit, s to skip, a to go back one song, o to pause, p to play, e to toggle shuffle (shuffle is '+shufflestatus+')', curses.A_NORMAL)
                 ch = stdscr.getch()
                 if ch == ord('q'):
                     pygame.mixer.music.stop()
                     lmao=0
                     break
                 if ch == ord('s'): pygame.mixer.music.stop(); break
+                if ch == ord('a'):
+                    if len(history) == 1: songlist.insert(0, history.pop(-1)); break
+                    if len(history) >= 2: songlist.insert(0, history.pop(-1)); songlist.insert(0, history.pop(-1)); break
                 if ch == ord('p'): pygame.mixer.music.unpause(); paused=False
                 if ch == ord('o'): pygame.mixer.music.pause(); paused=True
                 if ch == ord('.'): pygame.mixer.music.unpause(); paused=False
                 if ch == ord(','): pygame.mixer.music.pause(); paused=True
                 if ch == ord('w'): pygame.mixer.music.set_pos(180)
+                if ch == ord('e'):
+                    if shuffled: shuffled = False; songlist.sort(key = lambda k: int(k)); print(songlist)
+                    elif not shuffled: shuffled = True; random.shuffle(songlist); print(songlist)
                 if ch == curses.KEY_UP:
                     if vol<1: vol+=0.1
                     pygame.mixer.music.set_volume(vol)
                 if ch == curses.KEY_DOWN:
                     if vol>0: vol-=0.1
                     pygame.mixer.music.set_volume(vol)
-                stdscr.refresh()
                 if not pygame.mixer.music.get_busy() and not paused:
                     song_playing=False
                 else:
                     song_playing=True
+                nopwin.refresh()
+                playwin.refresh()
+                ctrlwin.refresh()
+                time.sleep(0.1)
+                stdscr.refresh()
+
 
         # --- Cleanup on exit ---
         pygame.mixer.music.stop()
@@ -200,10 +267,20 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists'):
         curses.nocbreak()
         curses.endwin()
 
+def music_playlist_player_menu(path='playlists', askshuffle=True):
+    Playlists = os.listdir(path); Playlists.append('Download New Playlist'); Playlists.append('Cancel')
+    import MenuLibrary as ML
+    playlist_title = ML.makemenu(Playlists)
+    if playlist_title == 'Download New Playlist':
+        yt_playlist_mp3_menu()
+    if playlist_title == 'Cancel':
+        return 0
+    else:
+        music_playlist_player(playlist_title=playlist_title, path=path, askshuffle=askshuffle)
 
-def music_player(filename=False, url=False):
+
+def music_player(path='download',filename=False, url=False):
     import curses, traceback
-    clear()
     pygame.mixer.init()
 
 
@@ -218,7 +295,7 @@ def music_player(filename=False, url=False):
             song_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
             filename = song_title+'.mp3'
     if filename:
-        if not os.path.isfile(os.path.join('downloads', filename)):
+        if not os.path.isfile(os.path.join(path, filename)):
             return print(filename+' does not exist in downloads')
         lmao = 1
         try:
@@ -227,7 +304,8 @@ def music_player(filename=False, url=False):
             x_w, y_w = stdscr.getmaxyx()
             curses.noecho()             # turn off auto echoing of keypress on to screen
             curses.cbreak()             # enter break mode where pressing Enter key
-                                        #  after keystroke is not required for it to register
+            vol = 0.5
+            paused=False                            #  after keystroke is not required for it to register
             stdscr.keypad(1)            # enable special Key values such as curses.KEY_LEFT etc
             stdscr.nodelay(True)
         except:
@@ -238,12 +316,12 @@ def music_player(filename=False, url=False):
             curses.endwin()
             return print('error initalising curses')
         try:
-            pygame.mixer.music.load(os.path.join('downloads', filename))
+            pygame.mixer.music.load(os.path.join(path, filename))
             pygame.mixer.music.set_volume(1)
             pygame.mixer.music.play()
         except:
             print('There was a problem playing '+filename.split('.')[0])
-        while True:
+        while lmao:
             # stay in this loop till the user presses 'q'
             songpos = pygame.mixer.music.get_pos()/1000
             x_w, y_w = stdscr.getmaxyx()
@@ -251,13 +329,15 @@ def music_player(filename=False, url=False):
             stdscr.border(0)
             stdscr.addstr(1, 1, 'Now Playing Song: '+filename.split('.')[0], curses.A_NORMAL)
             stdscr.addstr(2, 1, sec_t_timestamp(songpos), curses.A_NORMAL)
+            stdscr.addstr(3, 2, 'volume: '+str(int(vol*100))+'%', curses.A_NORMAL)
             stdscr.addstr(int(x_w-1), 1, 'Press q to quit, o to pause, p to play', curses.A_NORMAL)
             ch = stdscr.getch()
+            if ch == ord('q'): pygame.mixer.music.stop(); break
             if ch == ord('s'): pygame.mixer.music.stop(); break
-            if ch == ord('p'): pygame.mixer.music.unpause()
-            if ch == ord('o'): pygame.mixer.music.pause()
-            if ch == ord('.'): pygame.mixer.music.unpause()
-            if ch == ord(','): pygame.mixer.music.pause()
+            if ch == ord('p'): pygame.mixer.music.unpause(); paused=False
+            if ch == ord('o'): pygame.mixer.music.pause(); paused=True
+            if ch == ord('.'): pygame.mixer.music.unpause(); paused=False
+            if ch == ord(','): pygame.mixer.music.pause(); paused=True
             if ch == ord('w'): pygame.mixer.music.set_pos(180)
             if ch == curses.KEY_UP:
                 if vol<1: vol+=0.1
@@ -266,6 +346,8 @@ def music_player(filename=False, url=False):
                 if vol>0: vol-=0.1
                 pygame.mixer.music.set_volume(vol)
             stdscr.refresh()
+            if not pygame.mixer.music.get_busy() and not paused:
+                lmao=0
 
         # --- Cleanup on exit ---
         pygame.mixer.music.stop()
@@ -273,6 +355,23 @@ def music_player(filename=False, url=False):
         curses.echo()
         curses.nocbreak()
         curses.endwin()
+
+def music_player_menu(path='playlists'):
+    path2 = path
+    while True:
+        Playlists = os.listdir(path2); Playlists.append('..'); Playlists.append('Cancel')
+        import MenuLibrary as ML
+        playlist_title = ML.makemenu(Playlists)
+        if playlist_title == 'Cancel':
+            break
+        if playlist_title == '..':
+            path2 = os.path.join(path2, '..')
+            logging.info('..: '+path2)
+        elif os.path.isdir(os.path.join(path2, playlist_title)):
+            path2 = os.path.join(path2, playlist_title)
+            logging.info(path2)
+        else:
+            music_player(filename=playlist_title, path=path2)
 
 
 def cli_play_playlist(path='playlists', playlist_title=False, url=False):
@@ -370,7 +469,6 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             install_ffmpeg()
         except:
             return print('could not download ffmpeg, please install ffmpeg')
-        clear()
     ydl_opts = {
     'logger': logger(),
     'ignoreerrors': True
@@ -463,11 +561,49 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                 del audiofile
             except:
                 print('could not write metadata to ', i['title'])
+    if info_dict['extractor_key'] == "BandcampAlbum":
+        for i in info_dict['entries']:
+            if i == None:
+                continue
+            if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"]};
+            else: metadata = None
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+            # print(playlist[i]["Metadata"], playlist[i]["filepath"])
+            if metadata["album"] == None:
+                Albumname = playlist_title
+            else:
+                Albumname = metadata["album"]
+            dl_file(i['thumbnails'][0]['url'], (i['title']+'.'+i['thumbnails'][0]['url'].split('.')[-1]), os.path.join(path, playlist_title))
+            # try:
+            if metadata != None:
+                audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
+                print(audiofile.tag)
+                if audiofile.tag == None:
+                    audiofile.initTag(version=(2,3,0))
+                    print(audiofile.tag)
+                    # audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
+                    if metadata != None:
+                        audiofile.tag.artist = metadata["artist"]
+                        audiofile.tag.album = Albumname
+                        audiofile.tag.album_artist = metadata["artist"]
+                        audiofile.tag.title = metadata["track"]
+                        audiofile.tag.track_num = i['playlist_index']
+                        audiofile.tag.save()
+                        del audiofile
+                    else:
+                        audiofile.tag.album = playlist_title
+                        audiofile.tag.title = i['track']
+                        audiofile.tag.track_num = i['playlist_index']
+                        audiofile.tag.save()
+                        del audiofile
+            # except:
+                # logging.error('could not write metadata to '+ i['track'])
     with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
     if autoplay:
         if Truecli: cli_play_playlist(path=path, playlist_title=playlist_title)
-        else: music_playlist_player(path=path, playlist_title=playlist_title)
+        else: music_playlist_player(path=path, playlist_title=playlist_title, askshuffle=False)
 
 def yt_playlist_mp3_menu(lmao=''):
     path = 'playlists'; autoplay = True; overwrite = False
@@ -508,12 +644,15 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
         with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'r') as file:
             info_dict = json.load(file)
         for i in playlist:
+            # print(playlist[i]["Metadata"], playlist[i]["filepath"])
             if playlist[i]["Metadata"]["album"] == None:
                 Albumname = playlist_title
             else:
                 Albumname = playlist[i]["Metadata"]["album"]
             try:
                 if playlist[i]["Metadata"] != None:
+                    audiofile = eyed3.load(playlist[i]['filepath'])
+                    audiofile.tag.save(version=(2,3,0))
                     audiofile = eyed3.load(playlist[i]['filepath'])
                     audiofile.tag.artist = playlist[i]["Metadata"]["artist"]
                     audiofile.tag.album = Albumname
@@ -523,6 +662,8 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
                     audiofile.tag.save()
                     del audiofile
                 else:
+                    audiofile = eyed3.load(playlist[i]['filepath'])
+                    audiofile.tag.save(version=(2,3,0))
                     audiofile = eyed3.load(playlist[i]['filepath'])
                     audiofile.tag.album = playlist_title
                     audiofile.tag.title = playlist[i]['title']
@@ -543,7 +684,6 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             install_ffmpeg()
         except:
             return print("could not download ffmpeg.exe")
-        clear()
     ydl_opts={}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
@@ -881,15 +1021,31 @@ def menu():
             aaarguments[k] = v
         return album_art_folder(**aaarguments)
     if 'pp' in arglist:
-        ppargopts = []; pparguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
+        ppargopts = []; pparguments = {'playlist_title':False, 'url':False, 'path':'playlists', 'askshuffle':True}
         for i in argopts:
             if i[0] == 'pp': ppargopts.append(i[1])
+        if len(ppargopts)==0: return music_playlist_player_menu()
         for i in ppargopts:
             k,v = i.split('=',1)
             if v == 'True': v=True
             if v == 'False': v=False
             pparguments[k] = v
+            if not pparguments['playlist_title'] and not pparguments['url']:
+                music_playlist_player_menu(path=pparguments['path'], askshuffle=pparguments['askshuffle'])
         return music_playlist_player(**pparguments)
+    if 'mp' in arglist:
+        mpargopts = []; mparguments = {'filename':False, 'url':False, 'path':'playlists'}
+        for i in argopts:
+            if i[0] == 'mp': mpargopts.append(i[1])
+        if len(mpargopts)==0: return music_player_menu()
+        for i in mpargopts:
+            k,v = i.split('=',1)
+            if v == 'True': v=True
+            if v == 'False': v=False
+            mparguments[k] = v
+            if not mparguments['playlist_title'] and not mparguments['url']:
+                music_player_menu(path=mparguments['path'])
+        return music_player(**pparguments)
     if 'yl' in arglist:
         ylargopts = []; ylarguments = {'autoplay':True, 'MPV':True, 'chromechat':False}
         for i in argopts:

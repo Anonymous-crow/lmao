@@ -565,7 +565,7 @@ async def on_ready():
 
         members = '\n - '.join([member.name for member in guild.members])
         print(f'Guild Members:\n - {members}')
-    game = discord.Game("CUM")
+    game = discord.Game("A L I C E")
     await bot.change_presence(status=discord.Status.online, activity=game)
 
 @bot.listen('on_message')
