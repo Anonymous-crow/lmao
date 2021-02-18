@@ -185,11 +185,11 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
                 # stay in this loop till the user presses 'q'
                 songpos = pygame.mixer.music.get_pos()/1000
                 y_wv, x_wv = stdscr.getmaxyx()
-                if not y_wv == y_w or not x_wv == x_w:
-                    y_w = y_wv; x_w = x_wv
-                    nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
-                    playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
-                    ctrlwin = curses.newwin( 3, 0, int(y_w)-3, 0)
+                # if not y_wv == y_w or not x_wv == x_w:
+                #     y_w = y_wv; x_w = x_wv
+                nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
+                playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
+                ctrlwin = curses.newwin( 3, 0, int(y_w)-3, 0)
                 nopwin.clear()
                 playwin.clear()
                 ctrlwin.clear()
@@ -268,15 +268,33 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
         curses.endwin()
 
 def music_playlist_player_menu(path='playlists', askshuffle=True):
-    Playlists = os.listdir(path); Playlists.append('Download New Playlist'); Playlists.append('Cancel')
-    import MenuLibrary as ML
-    playlist_title = ML.makemenu(Playlists)
-    if playlist_title == 'Download New Playlist':
-        yt_playlist_mp3_menu()
-    if playlist_title == 'Cancel':
-        return 0
-    else:
-        music_playlist_player(playlist_title=playlist_title, path=path, askshuffle=askshuffle)
+    path2 = path
+    while True:
+        Playlists = os.listdir(path2); Playlists.append('Download New Playlist'); Playlists.append('..'); Playlists.append('Cancel')
+        import MenuLibrary as ML
+        playlist_title = ML.makemenu(Playlists)
+        if playlist_title == 'Cancel':
+            return 0
+        if playlist_title == 'Download New Playlist':
+            yt_playlist_mp3_menu()
+        if playlist_title == '..':
+            path2 = os.path.join(path2, '..')
+        elif os.path.isdir(os.path.join(path2, playlist_title)):
+            # if os.path.isfile(os.path.join(path2, playlist_title, playlist_title+' playlist.json')):
+            if os.path.isfile(os.path.join(path2, playlist_title, playlist_title+' playlist.json')):
+                music_playlist_player(playlist_title=playlist_title, path=path2, askshuffle=askshuffle)
+                continue
+            else:
+                path2 = os.path.join(path2, playlist_title)
+    # Playlists = os.listdir(path); Playlists.append('Download New Playlist'); Playlists.append('Cancel')
+    # import MenuLibrary as ML
+    # playlist_title = ML.makemenu(Playlists)
+    # if playlist_title == 'Download New Playlist':
+    #     yt_playlist_mp3_menu()
+    # if playlist_title == 'Cancel':
+    #     return 0
+    # else:
+    #     music_playlist_player(playlist_title=playlist_title, path=path, askshuffle=askshuffle)
 
 
 def music_player(path='download',filename=False, url=False):
@@ -366,10 +384,8 @@ def music_player_menu(path='playlists'):
             break
         if playlist_title == '..':
             path2 = os.path.join(path2, '..')
-            logging.info('..: '+path2)
         elif os.path.isdir(os.path.join(path2, playlist_title)):
             path2 = os.path.join(path2, playlist_title)
-            logging.info(path2)
         else:
             music_player(filename=playlist_title, path=path2)
 
