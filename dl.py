@@ -6,4 +6,4 @@ def dl_file(url, filename):
         file.write(x.content); file.close()
 
 if __name__ == "__main__":
-    file('https://crow.epicgamer.org/assets/ffmpeg.exe', 'ffmpeg2.exe')
+    dl_file('https://crow.epicgamer.org/assets/ffmpeg.exe', 'ffmpeg2.exe')

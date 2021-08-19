@@ -4,7 +4,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import logging, random, time, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
 
 def install_dependencies():
-    os.system('python -m pip install windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
+    os.system('python -m pip install -U windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
 
 def sec_t_timestamp(sec):
     import time
@@ -205,9 +205,9 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
                         np = ' '
                     try:
                         if playlist[j]["Metadata"] != None:
-                            playwin.addstr(lne, 1, np+playlist[j]["Metadata"]["track"], curses.A_NORMAL)
+                            playwin.addstr(lne, 1, np+j+'. '+playlist[j]["Metadata"]["track"], curses.A_NORMAL)
                         else:
-                            playwin.addstr(lne, 1, np+playlist[j]["title"], curses.A_NORMAL)
+                            playwin.addstr(lne, 1, np+j+'. '+playlist[j]["title"], curses.A_NORMAL)
                     except:
                         pass
                 nopwin.addstr(1, 2, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)
@@ -258,7 +258,6 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
                 ctrlwin.refresh()
                 time.sleep(0.1)
                 stdscr.refresh()
-
 
         # --- Cleanup on exit ---
         pygame.mixer.music.stop()
@@ -478,6 +477,24 @@ def execute_cmc(command):
     else:
         raise ProcessException(command, exitCode, output)
 
+def album_art_folder(playlist_title=False, url=False, path='playlists', force=True, no_embed=False):
+    if not playlist_title and not url: return print('please pass a url or playlist title')
+    if playlist_title and url: return print('please do not pass both a url and playlist title')
+    if url:
+        ydl_opts = {'ignoreerrors': True}
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+    if playlist_title:
+        import get_cover_art
+        coverdict={'inline':True, 'verbose':True}
+        if force:
+            coverdict['force']=True
+        if no_embed:
+            coverdict['no_embed']=True
+        finder = get_cover_art.CoverFinder(coverdict)
+        finder.scan_folder(os.path.join(path, playlist_title))
+
 def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3'):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
@@ -507,6 +524,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
             'nooverwrites': overwrite,
             'ignoreerrors': True,
+            'embed-thumbnail': True,
+            'add-metadata': True,
             'logger': logger(),
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -519,6 +538,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
         ydl_opts = {
             'outtmpl': '%(title)s.%(ext)s',
             'format': format,
+            'embed-thumbnail': True,
+            'add-metadata': True,
             'ignoreerrors': True,
             'logger': logger(),
         }
@@ -534,15 +555,19 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
         for i in info_dict['entries']:
             if i == None:
                 continue
-            if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
-            else: metadata = None
-            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            try:
+                metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
+            except:
+                metadata = None
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
             playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
             try:
                 if metadata != None:
                     if metadata["album"] == None: Albumname = playlist_title
                     else: Albumname = metadata["album"]
                     audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    if audiofile.tag == None:
+                        audiofile.initTag(version=(2,3,0))
                     audiofile.tag.artist = metadata["artist"]
                     audiofile.tag.album = Albumname
                     audiofile.tag.album_artist = metadata["artist"]
@@ -553,6 +578,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                     del audiofile
                 else:
                     audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                    if audiofile.tag == None:
+                        audiofile.initTag(version=(2,3,0))
                     audiofile.tag.album = info_dict['title']
                     audiofile.tag.title = i['title']
                     audiofile.tag.track_num = i['playlist_index']
@@ -560,13 +587,16 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                     del audiofile
             except:
                 print('could not write metadata to ', i['title'])
+        album_art_folder(playlist_title=playlist_title, no_embed=True)
     if info_dict['extractor'] == "soundcloud:set":
         for i in info_dict['entries']:
             metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
-            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
             playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
             try:
                 audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                if audiofile.tag == None:
+                    audiofile.initTag(version=(2,3,0))
                 audiofile.tag.artist = i["uploader"]
                 audiofile.tag.album = info_dict['title']
                 audiofile.tag.album_artist = i["uploader"]
@@ -583,38 +613,38 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                 continue
             if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"]};
             else: metadata = None
-            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_')
+            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
             playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
             # print(playlist[i]["Metadata"], playlist[i]["filepath"])
             if metadata["album"] == None:
                 Albumname = playlist_title
             else:
                 Albumname = metadata["album"]
-            dl_file(i['thumbnails'][0]['url'], (i['title']+'.'+i['thumbnails'][0]['url'].split('.')[-1]), os.path.join(path, playlist_title))
-            # try:
-            if metadata != None:
-                audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
-                print(audiofile.tag)
-                if audiofile.tag == None:
-                    audiofile.initTag(version=(2,3,0))
+            try:
+                dl_file(i['thumbnails'][0]['url'], (i['title']+'.'+i['thumbnails'][0]['url'].split('.')[-1]).replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?',''), os.path.join(path, playlist_title, 'thumbnails'))
+                if metadata != None:
+                    audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
                     print(audiofile.tag)
-                    # audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
-                    if metadata != None:
-                        audiofile.tag.artist = metadata["artist"]
-                        audiofile.tag.album = Albumname
-                        audiofile.tag.album_artist = metadata["artist"]
-                        audiofile.tag.title = metadata["track"]
-                        audiofile.tag.track_num = i['playlist_index']
-                        audiofile.tag.save()
-                        del audiofile
-                    else:
-                        audiofile.tag.album = playlist_title
-                        audiofile.tag.title = i['track']
-                        audiofile.tag.track_num = i['playlist_index']
-                        audiofile.tag.save()
-                        del audiofile
-            # except:
-                # logging.error('could not write metadata to '+ i['track'])
+                    if audiofile.tag == None:
+                        audiofile.initTag(version=(2,3,0))
+                        print(audiofile.tag)
+                        # audiofile = eyed3.load(os.path.join('playlists', playlist_title, filename))
+                        if metadata != None:
+                            audiofile.tag.artist = metadata["artist"]
+                            audiofile.tag.album = Albumname
+                            audiofile.tag.album_artist = metadata["artist"]
+                            audiofile.tag.title = metadata["track"]
+                            audiofile.tag.track_num = i['playlist_index']
+                            audiofile.tag.save()
+                            del audiofile
+                        else:
+                            audiofile.tag.album = playlist_title
+                            audiofile.tag.title = i['track']
+                            audiofile.tag.track_num = i['playlist_index']
+                            audiofile.tag.save()
+                            del audiofile
+            except:
+                logging.error('could not write metadata to '+ i['track'])
     with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'w') as file:
         json.dump(playlist, file, indent=4, separators=(',', ': '))
     if autoplay:
@@ -632,19 +662,6 @@ def yt_playlist_mp3_menu(lmao=''):
     if overwrite == 'y': overwrite = True
     if overwrite == 'n': overwrite = False
     yt_playlist_mp3(url, path=path, autoplay=autoplay, overwrite=overwrite)
-
-def album_art_folder(playlist_title=False, url=False, path='playlists'):
-    if not playlist_title and not url: return print('please pass a url or playlist title')
-    if playlist_title and url: return print('please do not pass both a url and playlist title')
-    if url:
-        ydl_opts = {'ignoreerrors': True}
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=False)
-            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
-    if playlist_title:
-        import get_cover_art
-        finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':True})
-        finder.scan_folder(os.path.join(path, playlist_title))
 
 def playlist_metadata(playlist_title=False, url=False, path='playlists'):
     if not playlist_title and not url: return print('please pass a url or playlist title')
@@ -689,7 +706,7 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
             except:
                 logging.error('could not write metadata to', playlist[i]['title'])
         import get_cover_art
-        finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':True})
+        finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':False})
         finder.scan_folder(os.path.join(path, playlist_title))
 
 
@@ -710,6 +727,8 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             ydl_opts = {
                 'outtmpl': '%(title)s.%(ext)s',
                 'format': 'bestaudio/best',
+                'embed-thumbnail': True,
+                'add-metadata': True,
                 'ignoreerrors': True,
                 'logger': logger(),
                 'noplaylist': True,
@@ -723,6 +742,8 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             ydl_opts = {
                 'outtmpl': '%(title)s.%(ext)s',
                 'format': format,
+                'embed-thumbnail': True,
+                'add-metadata': True,
                 'ignoreerrors': True,
                 'logger': logger(),
                 'noplaylist': True,
@@ -1095,7 +1116,6 @@ def main():
     #typetext()
     #videoplayer('https://www.youtube.com/watch?v=BqnG_Ei35JE')
     #downloadfile()
-    #yt_live('https://www.twitch.tv/hasanabi')
     #yt_playlist_mp3('https://www.youtube.com/playlist?list=OLAK5uy_m0caEe_OxtoII-A3qucyav_776n7-HQ7M', autoplay=True)
     #downloadfile("https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", overwrite=True, filename="alice.png")
     '''
