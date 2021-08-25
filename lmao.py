@@ -508,17 +508,17 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
-        try:
-            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
-        except:
-            playlist_title = info_dict['id']
-        if not os.path.isdir(os.path.join(path, playlist_title)):
-            created = True
-            if not os.path.isdir(path):
-                os.mkdir(path)
-            os.mkdir(os.path.join(path, playlist_title))
-        with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
-            json.dump(info_dict, file, indent=4, separators=(',', ': '))
+    try:
+        playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+    except:
+        playlist_title = info_dict['id']
+    if not os.path.isdir(os.path.join(path, playlist_title)):
+        created = True
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        os.mkdir(os.path.join(path, playlist_title))
+    with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
+        json.dump(info_dict, file, indent=4, separators=(',', ': '))
     if format == 'mp3':
         ydl_opts = {
             'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
@@ -532,6 +532,24 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
+            }],
+        }
+    elif format=='flac':
+        ydl_opts = {
+            'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
+            'format': 'bestaudio/best',
+            'embed-thumbnail': True,
+            'add-metadata': True,
+            'ignoreerrors': True,
+            'logger': logger(),
+            'noplaylist': True,
+            # 'extract-audio': True,
+            # 'audio-format': 'flac',
+            # 'audio-quality': '0',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'flac',
+                'preferredquality': '300',
             }],
         }
     else:
@@ -552,41 +570,61 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                 ydl.download([url])
     playlist = {}
     if info_dict['extractor_key'] == "YoutubeTab":
-        for i in info_dict['entries']:
-            if i == None:
-                continue
-            try:
-                metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
-            except:
-                metadata = None
-            filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
-            playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
-            try:
-                if metadata != None:
-                    if metadata["album"] == None: Albumname = playlist_title
-                    else: Albumname = metadata["album"]
-                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                    if audiofile.tag == None:
-                        audiofile.initTag(version=(2,3,0))
-                    audiofile.tag.artist = metadata["artist"]
-                    audiofile.tag.album = Albumname
-                    audiofile.tag.album_artist = metadata["artist"]
-                    audiofile.tag.title = metadata["track"]
-                    audiofile.tag.track_num = i['playlist_index']
-                    audiofile.tag.release_date = i["release_year"]
-                    audiofile.tag.save()
-                    del audiofile
-                else:
-                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                    if audiofile.tag == None:
-                        audiofile.initTag(version=(2,3,0))
-                    audiofile.tag.album = info_dict['title']
-                    audiofile.tag.title = i['title']
-                    audiofile.tag.track_num = i['playlist_index']
-                    audiofile.tag.save()
-                    del audiofile
-            except:
-                print('could not write metadata to ', i['title'])
+        if format=='mp3':
+            for i in info_dict['entries']:
+                if i == None:
+                    continue
+                try:
+                    metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
+                except:
+                    metadata = None
+                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                try:
+                    if metadata != None:
+                        if metadata["album"] == None: Albumname = playlist_title
+                        else: Albumname = metadata["album"]
+                        audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                        if audiofile.tag == None:
+                            audiofile.initTag(version=(2,3,0))
+                        audiofile.tag.artist = metadata["artist"]
+                        audiofile.tag.album = Albumname
+                        audiofile.tag.album_artist = metadata["artist"]
+                        audiofile.tag.title = metadata["track"]
+                        audiofile.tag.track_num = i['playlist_index']
+                        audiofile.tag.release_date = i["release_year"]
+                        audiofile.tag.save()
+                        del audiofile
+                    else:
+                        audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
+                        if audiofile.tag == None:
+                            audiofile.initTag(version=(2,3,0))
+                        audiofile.tag.album = info_dict['title']
+                        audiofile.tag.title = i['title']
+                        audiofile.tag.track_num = i['playlist_index']
+                        audiofile.tag.save()
+                        del audiofile
+                except:
+                    print('could not write metadata to ', i['title'])
+        if format=='flac':
+            with open(os.path.join(path, playlist_title,'playlist.txt'), 'w') as file:
+                for i in info_dict['entries']:
+                    if i == None:
+                        continue
+                    try:
+                        metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']};
+                        textmetadata = i["artist"] +' :: '+ i["album"]+' :: '+ i["track"]+' :: '+i['creator'] #print(i['creator'].split(','))
+                    except:
+                        metadata = None
+                        textmetadata =  ''+' :: '+ info_dict['title']+' :: '+ i['title']+' :: '
+                    filename=(i['title']+'.flac').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
+                    playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                    file.write(filename+' :: '+str(i['title'])+' :: '+str(i['playlist_index'])+' :: '+textmetadata+'\n')
+            with open(os.path.join(path, playlist_title,'playlist.txt'), 'r') as f:
+                sortfile = f.readlines()
+            sortfile.sort()
+            with open(os.path.join(path, playlist_title,'playlist.txt'), 'w') as f:
+                f.writelines(sortfile)
         album_art_folder(playlist_title=playlist_title, no_embed=True)
     if info_dict['extractor'] == "soundcloud:set":
         for i in info_dict['entries']:
@@ -721,7 +759,7 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
         video_title=info_dict['title'].replace(':', ' -')
-    filename = video_title + ".mp3"
+    filename = video_title + "." + format
     if format=='mp3':
         if not os.path.isfile(os.path.join(path, filename)):
             ydl_opts = {
@@ -738,18 +776,8 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
                     'preferredquality': '192',
                 }],
             }
-        else:
-            ydl_opts = {
-                'outtmpl': '%(title)s.%(ext)s',
-                'format': format,
-                'embed-thumbnail': True,
-                'add-metadata': True,
-                'ignoreerrors': True,
-                'logger': logger(),
-                'noplaylist': True,
-            }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
         #clear()
         if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
         else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
@@ -761,6 +789,43 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             audiofile.tag.title = info_dict["track"]
             audiofile.tag.release_date = info_dict["release_year"]
             audiofile.tag.save()
+    elif format=='flac':
+        if not os.path.isfile(os.path.join(path, video_title+".flac")):
+            ydl_opts = {
+                'outtmpl': '%(title)s.%(ext)s',
+                'format': 'bestaudio/best',
+                'embed-thumbnail': True,
+                'add-metadata': True,
+                'ignoreerrors': True,
+                'logger': logger(),
+                'noplaylist': True,
+                # 'extract-audio': True,
+                # 'audio-format': 'flac',
+                # 'audio-quality': '0',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'flac',
+                    'preferredquality': '300',
+                }],
+            }
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
+            else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
+        else:
+            print('file already exists')
+    else:
+        ydl_opts = {
+            'outtmpl': '%(title)s.%(ext)s',
+            'format': format,
+            'embed-thumbnail': True,
+            'add-metadata': True,
+            'ignoreerrors': True,
+            'logger': logger(),
+            'noplaylist': True,
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
     if autoplay: music_player(filename=filename)
 
 def yt_mp3_menu(lmao=''):
