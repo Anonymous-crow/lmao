@@ -54,19 +54,21 @@ def b64_decode(text):
 def downloadfile_curl(url = "https://raw.githubusercontent.com/Anonymous-crow/Disarray/master/image%5B1%5D.png", filename=False, overwrite=False, path='downloads'):
         if not filename:
             if not os.path.isdir(path): os.makedirs(path)
-            os.system('cd '+path+'&& curl -O ' + url + ' --ssl-no-revoke && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
+            os.system('cd '+path+'&& curl -OL ' + url + ' --ssl-no-revoke && cd '+ os.path.dirname(os.path.abspath(__file__))); clear();
         else:
             if not os.path.isdir(path): os.makedirs(path)
-            if overwrite: os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear();
+            if overwrite: os.system('curl ' + url + ' -L --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear();
             else:
                 while True:
-                    if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear(); break
+                    if not os.path.isfile(os.path.join(path, filename)): os.system('curl ' + url + ' -L --output ' + os.path.join(path, filename)+' --ssl-no-revoke'); clear(); break
                     else: filename = filename.split('.')[0] + '(1).' + filename.split('.')[1]
 
-def dl_file(url, filename, path=''):
+def dl_file(url, filename='', path=''):
     import requests
     headers = requests.utils.default_headers()
-    x = requests.get(url, headers=headers)
+    x = requests.get(url, headers=headers, allow_redirects=True)
+    if filename =='':
+        filename = url.split('/')[-1]
     if path=='':
         with open(filename, 'wb') as file:
             file.write(x.content); file.close()
@@ -76,20 +78,33 @@ def dl_file(url, filename, path=''):
             file.write(x.content); file.close()
 
 def install_ffmpeg():
-    dl_file(url='https://www.7-zip.org/a/7z1604-extra.7z',path=os.path.join('resources','7z'),filename='7z1604-extra.7z')
-    logging.info('downloaded 7z1604-extra.7z')
-    from pyunpack import Archive
-    if not os.path.isdir(os.path.join("resources","7z","7z1604-extra")): os.mkdir(os.path.join("resources","7z","7z1604-extra"))
-    try:
-        Archive(os.path.join('resources','7z','7z1604-extra.7z')).extractall(os.path.join("resources","7z","7z1604-extra"))
-    except:
-        logging.error('could not extract 7z1604-extra')
-    shutil.copyfile(os.path.join("resources","7z","7z1604-extra","7za.exe"), '7za.exe')
-    logging.info('copied 7za.exe')
-    dl_file(url='https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-19-full_build.7z', filename='ffmpeg-4.3.1-2020-11-19-full_build.7z',path=os.path.join('resources','ffmpeg'))
-    os.system('7za x '+os.path.join('resources','ffmpeg','ffmpeg-4.3.1-2020-11-19-full_build.7z')+' -o'+os.path.join('resources','ffmpeg'))
+    if not os.path.isfile('7za.exe'):
+        dl_file(url='https://www.7-zip.org/a/7z1900-extra.7z',path=os.path.join('resources','7z'),filename='7z1900-extra.7z')
+        logging.info('downloaded 7z1900-extra.7z')
+        import py7zr
+        #if not os.path.isdir(os.path.join("resources","7z","7z1900-extra")): os.mkdir(os.path.join("resources","7z","7z1900-extra"))
+        try:
+            archive = py7zr.SevenZipFile(os.path.join('resources','7z','7z1900-extra.7z'), mode='r')
+            archive.extractall(path=os.path.join("resources","7z","7z1900-extra"))
+            archive.close()
+        except:
+            print('could not extract 7z1900-extra')
+        try:
+            shutil.copyfile(os.path.join("resources","7z","7z1900-extra","7za.exe"), '7za.exe')
+        except:
+            try:
+                dl_file(url='https://crow.epicgamer.org/assets/7za.exe')
+            except:
+                return -1
+        logging.info('copied 7za.exe')
+    dl_file(url='https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z', filename='ffmpeg-release-full.7z',path=os.path.join('resources','ffmpeg'))
+    os.system('7za x '+os.path.join('resources','ffmpeg','ffmpeg-release-full.7z')+' -aoa '+os.path.join('resources','ffmpeg'))
     if not os.path.isfile('ffmpeg.exe'):
-        shutil.copyfile(os.path.join("resources","ffmpeg","ffmpeg-4.3.1-2020-11-19-full_build","bin","ffmpeg.exe"), 'ffmpeg.exe')
+        for i in os.listdir(os.path.join("resources","ffmpeg")):
+            print(i)
+            if os.path.isdir(os.path.join("resources","ffmpeg", i)):
+                ffmpegdir=i
+        shutil.copyfile(os.path.join("resources","ffmpeg",ffmpegdir,"bin","ffmpeg.exe"), 'ffmpeg.exe')
         logging.info('copied ffmpeg.exe')
 
 
@@ -168,13 +183,13 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
             if playlist[i]['Metadata'] != None:
                 title = playlist[i]['Metadata']['track'] + ' by ' + playlist[i]['Metadata']['artist']
 
-            try:
-                if lmao:
-                    pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
-                    pygame.mixer.music.set_volume(vol)
-                    pygame.mixer.music.play()
-            except:
-                print('There was a problem playing '+title)
+            ##try:
+            if lmao:
+                pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
+                pygame.mixer.music.set_volume(vol)
+                pygame.mixer.music.play()
+            ##except:
+                ##print('There was a problem playing '+title)
             y_w, x_w = stdscr.getmaxyx()
             nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
             playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
@@ -495,13 +510,10 @@ def album_art_folder(playlist_title=False, url=False, path='playlists', force=Tr
         finder = get_cover_art.CoverFinder(coverdict)
         finder.scan_folder(os.path.join(path, playlist_title))
 
-def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3'):
+def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3', enum=False):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
-        try:
-            install_ffmpeg()
-        except:
-            return print('could not download ffmpeg, please install ffmpeg')
+        install_ffmpeg()
     ydl_opts = {
     'logger': logger(),
     'ignoreerrors': True
@@ -509,7 +521,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
     try:
-        playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+        playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').translate({ord(i): ' ' for i in "<>:\"/\\|?*"})
     except:
         playlist_title = info_dict['id']
     if not os.path.isdir(os.path.join(path, playlist_title)):
@@ -519,6 +531,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
         os.mkdir(os.path.join(path, playlist_title))
     with open(os.path.join(path, playlist_title, playlist_title + ' metadata.json'), 'w') as file:
         json.dump(info_dict, file, indent=4, separators=(',', ': '))
+    if enum:
+        filename='%(playlist_index)s - %(title)s.%(ext)s'
     if format == 'mp3':
         ydl_opts = {
             'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
@@ -526,12 +540,12 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             'ignoreerrors': True,
             'embed-thumbnail': True,
             'add-metadata': True,
-            'logger': logger(),
+            ##'logger': logger(),
             'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
-                'preferredquality': '192',
+                'preferredquality': '256',
             }],
         }
     elif format=='flac':
@@ -541,7 +555,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             'embed-thumbnail': True,
             'add-metadata': True,
             'ignoreerrors': True,
-            'logger': logger(),
+            ##'logger': logger(),
             'noplaylist': True,
             # 'extract-audio': True,
             # 'audio-format': 'flac',
@@ -554,12 +568,12 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
         }
     else:
         ydl_opts = {
-            'outtmpl': '%(title)s.%(ext)s',
+            'outtmpl': os.path.join(path, playlist_title, '%(title)s.%(ext)s'),
             'format': format,
             'embed-thumbnail': True,
             'add-metadata': True,
             'ignoreerrors': True,
-            'logger': logger(),
+            ##'logger': logger(),
         }
     if created:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -578,7 +592,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                     metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}; #print(i['creator'].split(','))
                 except:
                     metadata = None
-                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
+                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
                 playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
                 try:
                     if metadata != None:
@@ -708,7 +722,7 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
         ydl_opts = {}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
-            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
     if playlist_title:
         with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
@@ -742,7 +756,7 @@ def playlist_metadata(playlist_title=False, url=False, path='playlists'):
                     audiofile.tag.save()
                     del audiofile
             except:
-                logging.error('could not write metadata to', playlist[i]['title'])
+                logging.error('could not write metadata to'+ playlist[i]['title'])
         import get_cover_art
         finder = get_cover_art.CoverFinder({'inline':True, 'verbose':True, 'force':False})
         finder.scan_folder(os.path.join(path, playlist_title))
@@ -761,9 +775,10 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
         video_title=info_dict['title'].replace(':', ' -')
     filename = video_title + "." + format
     if format=='mp3':
+        if not os.path.isdir(path): os.makedirs(path)
         if not os.path.isfile(os.path.join(path, filename)):
             ydl_opts = {
-                'outtmpl': '%(title)s.%(ext)s',
+                'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
                 'format': 'bestaudio/best',
                 'embed-thumbnail': True,
                 'add-metadata': True,
@@ -779,8 +794,6 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
         #clear()
-        if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
-        else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
         if info_dict["artist"] != None:
             audiofile = eyed3.load(os.path.join(path, filename))
             audiofile.tag.artist = info_dict["artist"]
@@ -792,7 +805,7 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
     elif format=='flac':
         if not os.path.isfile(os.path.join(path, video_title+".flac")):
             ydl_opts = {
-                'outtmpl': '%(title)s.%(ext)s',
+                'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
                 'format': 'bestaudio/best',
                 'embed-thumbnail': True,
                 'add-metadata': True,
@@ -810,13 +823,12 @@ def yt_mp3(url, path='downloads', autoplay=True, format='mp3'):
             }
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            if os.path.isdir(path): os.rename(filename, os.path.join(path, filename))
-            else: os.mkdir(path); os.rename(filename, os.path.join(path, filename))
+            if not os.path.isdir(path): os.mkdir(path)
         else:
             print('file already exists')
     else:
         ydl_opts = {
-            'outtmpl': '%(title)s.%(ext)s',
+            'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
             'format': format,
             'embed-thumbnail': True,
             'add-metadata': True,
@@ -893,7 +905,7 @@ def yt_live(url, autoplay=True, MPV=True, chromechat=False):
             else:
                 os.system('mpv '+info_dict["url"])
             if not chromechat:
-                os.system('start lmao.py --sendtwitchchat channel='+info_dict['webpage_url_basename'])
+                os.system('start python3 lmao.py --sendtwitchchat channel='+info_dict['webpage_url_basename'])
                 import twitchbot
                 bot = twitchbot.Bot([info_dict['webpage_url_basename']])
                 bot.run()
@@ -1086,6 +1098,9 @@ def menu():
             if i[0]=='yt' or i[0]=='-youtube_mp3': ytargopts.append(i[1])
         if len(ytargopts)==0: return yt_mp3_menu()
         for i in ytargopts:
+            if i[:4] == "http":
+                ytarguments['url']=i
+                continue
             k,v = i.split('=',1)
             if v == 'True': v=True
             if v == 'False': v=False
@@ -1097,6 +1112,9 @@ def menu():
             if i[0]=='yp' or i[0]=='-youtube_mp3_playlist': ypargopts.append(i[1])
         if len(ypargopts)==0: return yt_playlist_mp3_menu()
         for i in ypargopts:
+            if i[:4] == "http":
+                yparguments['url']=i
+                continue
             k,v = i.split('=',1)
             if v == 'True': v=True
             if v == 'False': v=False
@@ -1145,15 +1163,18 @@ def menu():
             if v == 'True': v=True
             if v == 'False': v=False
             mparguments[k] = v
-            if not mparguments['playlist_title'] and not mparguments['url']:
+            if not mparguments['filename'] and not mparguments['url']:
                 music_player_menu(path=mparguments['path'])
-        return music_player(**pparguments)
+        return music_player(**mparguments)
     if 'yl' in arglist:
         ylargopts = []; ylarguments = {'autoplay':True, 'MPV':True, 'chromechat':False}
         for i in argopts:
             if i[0] == 'yl': ylargopts.append(i[1])
         if len(ylargopts)==0: return yt_live_menu()
         for i in ylargopts:
+            if i[:4] == "http":
+                ylarguments['url']=i
+                continue
             k,v = i.split('=',1)
             if v == 'True': v=True
             if v == 'False': v=False

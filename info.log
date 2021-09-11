@@ -13,3 +13,69 @@ INFO:root:..: playlists\CrasH Talk\..\The Marias - Superclean Vol.1\..\..
 INFO:root:playlists\CrasH Talk\..\The Marias - Superclean Vol.1\..\..\playlists
 INFO:root:playlists\CrasH Talk\..\The Marias - Superclean Vol.1\..\..\playlists\The Marias - Superclean Vol.2
 INFO:root:playlists\…Because I’m Young Arrogant and Hate Everything You Stand For
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1604-extra
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1604-extra
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1604-extra
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1604-extra
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1604-extra
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1604-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1900-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:copied 7za.exe
+INFO:root:copied ffmpeg.exe
+INFO:root:downloaded 7z1900-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:downloaded 7z1900-extra.7z
+ERROR:root:could not extract 7z1900-extra
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+INFO:root:downloaded 7z1900-extra.7z
+INFO:root:copied 7za.exe
+ERROR:root:could not write metadata toRun The Jewels - Close Your Eyes And Count To F*ck feat. Zack De La Rocha (from Run The Jewels 2)
+ERROR:root:could not write metadata toRun The Jewels - Close Your Eyes And Count To F*ck feat. Zack De La Rocha (from Run The Jewels 2)
+ERROR:playsound:
+    Error 259 for command:
+        play TTS.mp3 wait
+    The driver cannot recognize the specified command parameter.
+ERROR:playsound:
+    Error 263 for command:
+        open TTS.mp3
+    The specified device is not open or is not recognized by MCI.
+ERROR:playsound:
+    Error 263 for command:
+        close TTS.mp3
+    The specified device is not open or is not recognized by MCI.
+WARNING:playsound:Failed to close the file: TTS.mp3
