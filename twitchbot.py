@@ -2,6 +2,7 @@ import logging, os, curses, threading, sys
 from dotenv import load_dotenv
 from emoji import demojize
 from twitchio.ext import commands
+from twitchio import client
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
@@ -9,12 +10,12 @@ class Bot(commands.Bot):
 
     def __init__(self, channels):
         super().__init__(
-            irc_token=os.getenv('TOKEN'),
+            token=os.getenv('TOKEN'),
             client_id=os.getenv('CLIENT_ID'),
             nick=os.getenv('NICKNAME'),
             prefix='>',
-            initial_channels=channels
         )
+        initial_channels=channels
         sys.tracebacklimit = 0
 
     # Events don't need decorators when subclassed
@@ -60,5 +61,5 @@ class curses_Bot(commands.Bot):
 
 
 if __name__ == '__main__':
-    bot = curses_Bot(['AnonymousCrow', 'itsryanhiga'])
+    bot = Bot(['AnonymousCrow', 'eggdotpng'])
     bot.run()

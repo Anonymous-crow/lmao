@@ -79,3 +79,96 @@ ERROR:playsound:
         close TTS.mp3
     The specified device is not open or is not recognized by MCI.
 WARNING:playsound:Failed to close the file: TTS.mp3
+INFO:twitchio.websocket:Successfully logged onto Twitch WS: anonymouscrow
+ERROR:root:could not write metadata to Colossus
+ERROR:root:could not write metadata to Never Fight A Man With A Perm
+ERROR:root:could not write metadata to I'm Scum
+ERROR:root:could not write metadata to Danny Nedelko
+ERROR:root:could not write metadata to Love Song
+ERROR:root:could not write metadata to June
+ERROR:root:could not write metadata to Samaritans
+ERROR:root:could not write metadata to Television
+ERROR:root:could not write metadata to Great
+ERROR:root:could not write metadata to Gram Rock
+ERROR:root:could not write metadata to Cry To Me
+ERROR:root:could not write metadata to Rottweiler
+ERROR:root:could not write metadata to Colossus
+ERROR:root:could not write metadata to Never Fight A Man With A Perm
+ERROR:root:could not write metadata to I'm Scum
+ERROR:root:could not write metadata to Danny Nedelko
+ERROR:root:could not write metadata to Love Song
+ERROR:root:could not write metadata to June
+ERROR:root:could not write metadata to Samaritans
+ERROR:root:could not write metadata to Television
+ERROR:root:could not write metadata to Great
+ERROR:root:could not write metadata to Gram Rock
+ERROR:root:could not write metadata to Cry To Me
+ERROR:root:could not write metadata to Rottweiler
+WARNING:eyed3.mp3.headers:Lame tag CRC check failed
+WARNING:eyed3.mp3.headers:Lame tag CRC check failed
+WARNING:eyed3.mp3.headers:Lame tag CRC check failed
+WARNING:eyed3.mp3.headers:Lame tag CRC check failed
+WARNING:eyed3.mp3.headers:Lame tag CRC check failed
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+ERROR:root:could not write metadata toBlue Ching
+ERROR:root:could not write metadata to Aquacode Databreaks (feat. Shabazz Palaces)
+ERROR:root:could not write metadata to Drownt
+ERROR:root:could not write metadata to The Deep (Instrumental)
+ERROR:root:could not write metadata to Aquacode Databreaks (Instrumental)
+ERROR:root:could not write metadata to Drownt (Instrumental)
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+WARNING:eyed3.id3.tag:TDRL value dropped.
+ERROR:root:could not write metadata to Near/Far
+ERROR:root:could not write metadata to Dirty Chompers
+ERROR:root:could not write metadata to Lunchtrays and Goldfish
+ERROR:root:could not write metadata to All Out Of Bubblegum
+ERROR:root:could not write metadata to Rise of The Elementals
+ERROR:root:could not write metadata to Fox Hunt
+ERROR:root:could not write metadata to Sit Down Waltz
+ERROR:root:could not write metadata to Holiday on Ice
+ERROR:root:could not write metadata to Subtle Frenzy
+ERROR:root:could not write metadata to Road To Joy
+ERROR:root:could not write metadata to J'Accuse
+ERROR:root:could not write metadata to Sit Down Smarch
+ERROR:root:could not write metadata to Bedtime for Bonzos

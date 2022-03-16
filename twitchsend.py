@@ -1,4 +1,4 @@
-import os
+import os, sys
 from dotenv import load_dotenv
 from emoji import demojize
 from twitchio.ext import commands
@@ -9,14 +9,15 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 chatlog = []
 # set up the bot
-channels=[os.getenv('CHANNEL'), 'itsryanhiga']
+channels=[os.getenv('CHANNEL')]
 bot = commands.Bot(
-    irc_token=os.getenv('TOKEN'),
+    token=os.getenv('TOKEN'),
     client_id=os.getenv('CLIENT_ID'),
     nick=os.getenv('NICKNAME'),
-    prefix=os.getenv('BOT_PREFIX'),
-    initial_channels=channels
+    prefix=">",
+    initial_channels=sys.argv[1:]
 )
+
 
 @bot.event
 async def event_ready():

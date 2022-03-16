@@ -510,14 +510,17 @@ def album_art_folder(playlist_title=False, url=False, path='playlists', force=Tr
         finder = get_cover_art.CoverFinder(coverdict)
         finder.scan_folder(os.path.join(path, playlist_title))
 
-def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3', enum=False):
+def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='playlists', format='mp3', enum=False, login=False, passwd=False):
     created = False
     if not os.path.isfile('ffmpeg.exe'):
         install_ffmpeg()
     ydl_opts = {
     'logger': logger(),
-    'ignoreerrors': True
+    'ignoreerrors': True,
+    'verbose': True
     }
+    if login:
+        ydl_opts.update({"username": login, "password": passwd})
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(url, download=False)
     try:
@@ -556,7 +559,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             'add-metadata': True,
             'ignoreerrors': True,
             ##'logger': logger(),
-            'noplaylist': True,
+            'noplaylist': False,
             # 'extract-audio': True,
             # 'audio-format': 'flac',
             # 'audio-quality': '0',
@@ -575,6 +578,8 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
             'ignoreerrors': True,
             ##'logger': logger(),
         }
+    if login:
+        ydl_opts.update({"username": login, "password": passwd})
     if created:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])

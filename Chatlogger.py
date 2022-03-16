@@ -1,4 +1,4 @@
-import socket, logging, re, os
+import socket, logging, re, os, sys
 from datetime import datetime
 from emoji import demojize
 from dotenv import load_dotenv
@@ -56,4 +56,4 @@ def chatmain(channel):
     send_chat(nickname, token, channel)
 
 if __name__ == '__main__':
-    chatmain("jacksepticeye")
+    chatmain(sys.argv[1])
