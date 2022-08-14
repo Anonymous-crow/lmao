@@ -664,6 +664,7 @@ def yt_playlist_mp3(url, autoplay=False, overwrite=False, Truecli=False, path='p
                 del audiofile
             except:
                 print('could not write metadata to ', i['title'])
+        album_art_folder(playlist_title=playlist_title, no_embed=True)
     if info_dict['extractor_key'] == "BandcampAlbum":
         for i in info_dict['entries']:
             if i == None:

@@ -13,12 +13,30 @@ def dl_file(url, filename, path=''):
 
 def dl_json(url):
     x = requests.get(url, headers=requests.utils.default_headers())
-    return json.loads((x.text))
+    return x.json()
+
 if __name__ == "__main__":
+    dir = os.getcwd()
+    os.chdir(dir)
+    print (dir)
+
+    if not os.path.isdir("src"): os.mkdir("src")
+
+    if not os.path.isfile(os.path.join(dir, "src", "eula.txt")):
+        with open(os.path.join(dir, "src", "eula.txt"), 'w') as file:
+            file.write("eula=true")
+
+    if not os.path.isfile("start.bat"):
+        with open(os.path.join(dir,"start.bat"), 'w') as file:
+            file.write(F"python3 \"{dir}\{os.path.basename(__file__)}\"")
+
     vers=dl_json('https://papermc.io/api/v2/projects/paper')["versions"][-1]
     print(vers)
     build=dl_json('https://papermc.io/api//v2/projects/paper/versions/'+vers)['builds'][-1]
     print(build)
     dwnld=dl_json('https://papermc.io/api//v2/projects/paper/versions/'+vers+'/builds/'+str(build))["downloads"]['application']
     print(dwnld)
-    dl_file('https://papermc.io/api//v2/projects/paper/versions/'+vers+'/builds/'+str(build)+'/downloads/'+dwnld['name'], dwnld['name'])
+    if not os.path.isfile(os.path.join(dir, "src", dwnld['name'])): dl_file(F'https://papermc.io/api//v2/projects/paper/versions/{vers}/builds/{str(build)}/downloads/{dwnld["name"]}', dwnld['name'], path=os.path.join(dir, "src"))
+    os.chdir(os.path.join(dir, "src"))
+    os.system(F"java -jar \"{dir}\src\{dwnld['name']}\" nogui")
+    sys.exit()
