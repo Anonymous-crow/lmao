@@ -26,7 +26,6 @@ zynsubfx/
 synthh/
 Discord/enc/
 */resources/
-*.log
 src/
 *.bat
 */.vs/

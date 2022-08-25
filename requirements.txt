@@ -1,4 +1,6 @@
+wheel
 windows-curses
+click
 pyunpack
 mutagen
 get_cover_art
@@ -9,11 +11,9 @@ gtts
 curses-menu
 playsound
 youtube-dl
-pafy
-pyglet
-opencv-python
 emoji
 python-dotenv
 twitchio
 eyed3
+pytaglib
 py7zr
