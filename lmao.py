@@ -1,7 +1,7 @@
-#from future import unicode_literals
+#!/usr/bin/env python3
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import logging, random, time, base64, json, youtube_dl, pafy, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
+import logging, random, time, base64, json, youtube_dl, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
 from mus_dl import MusicGetter
 
 mg = MusicGetter()
@@ -120,6 +120,7 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
             if shufflemenu == 'Yes': shuffled = True
             elif shufflemenu == 'No': shuffled = False
             elif shufflemenu == 'Cancel': return 0
+            else: shuffled = False
         else:
             shuffled = False
         # while True:

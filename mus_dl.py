@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, youtube_dl, logging, get_cover_art, json, taglib
+import os, youtube_dl, logging, get_cover_art, json, taglib, time
 
 def install_ffmpeg(overwrite=False):
     if os.name == 'nt':
@@ -55,7 +55,7 @@ class MusicGetter():
         }
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
-        self.log.debug(info_dict)
+        self.log.debug(json.dumps(info_dict, indent=4, separators=(',', ': ')))
         return info_dict
 
     def album_art_folder(self, path, force=True, no_embed=False):
@@ -154,6 +154,20 @@ class MusicGetter():
 
         playlist = {}
         if info_dict['extractor_key'] == "YoutubeTab":
+
+            formats = dict()
+            for i in info_dict["entries"]:
+                for j in i["formats"]:
+                    formats[j["format_id"]] = j["ext"]
+
+            cnt = 1
+            selected = 1
+            for i in formats:
+                if formats[i] == format:
+                    selected = cnt
+                self.log.debug(f"{cnt}: {formats[i]} | {i}")
+                cnt += 1
+
             if format=='mp3':
                 ydl_opts = {
                     'outtmpl': os.path.join(path, playlist_title, filenamefmt),
@@ -166,46 +180,7 @@ class MusicGetter():
                         'preferredquality': '256',
                     }],
                 }
-                if created or overwrite:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([url])
-                for i in info_dict['entries']:
-                    if i == None:
-                        continue
-                    try:
-                        metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}
-                    except:
-                        metadata = None
-                    filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
-                    playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
-                    try:
-                        if metadata != None:
-                            if metadata["album"] == None: Albumname = playlist_title
-                            else: Albumname = metadata["album"]
-                            audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                            if audiofile.tag == None:
-                                audiofile.initTag(version=(2,3,0))
-                            audiofile.tag.artist = metadata["artist"]
-                            audiofile.tag.album = Albumname
-                            audiofile.tag.album_artist = metadata["artist"]
-                            audiofile.tag.title = metadata["track"]
-                            audiofile.tag.track_num = i['playlist_index']
-                            audiofile.tag.release_date = i["release_year"]
-                            audiofile.tag.save()
-                            del audiofile
-                        else:
-                            audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                            if audiofile.tag == None:
-                                audiofile.initTag(version=(2,3,0))
-                            audiofile.tag.album = info_dict['title']
-                            audiofile.tag.title = i['title']
-                            audiofile.tag.track_num = i['playlist_index']
-                            audiofile.tag.save()
-                            del audiofile
-                    except:
-                        self.log.error('could not write metadata to ', i['title'])
-                self.album_art_folder(playlist_title=playlist_title, no_embed=True)
-            if format=='flac':
+            elif format=='flac':
                 ydl_opts = {
                     'outtmpl': os.path.join(path, playlist_title, filenamefmt),
                     'format': 'bestaudio/best',
@@ -221,27 +196,6 @@ class MusicGetter():
                         'preferredquality': '300',
                     }],
                 }
-                if created or overwrite:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([url])
-                with open(os.path.join(path, playlist_title,'playlist.txt'), 'w') as file:
-                    for i in info_dict['entries']:
-                        if i == None:
-                            continue
-                        try:
-                            metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']};
-                            textmetadata = i["artist"] +' :: '+ i["album"]+' :: '+ i["track"]+' :: '+i['creator']
-                        except:
-                            metadata = None
-                            textmetadata =  ''+' :: '+ info_dict['title']+' :: '+ i['title']+' :: '
-                        filename=(i['title']+'.flac').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
-                        playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
-                        file.write(filename+' :: '+str(i['title'])+' :: '+str(i['playlist_index'])+' :: '+textmetadata+'\n')
-                with open(os.path.join(path, playlist_title,'playlist.txt'), 'r') as f:
-                    sortfile = f.readlines()
-                sortfile.sort()
-                with open(os.path.join(path, playlist_title,'playlist.txt'), 'w') as f:
-                    f.writelines(sortfile)
             else:
                 ydl_opts = {
                     'outtmpl': os.path.join(path, playlist_title, filenamefmt),
@@ -249,9 +203,57 @@ class MusicGetter():
                     'ignoreerrors': True,
                     ##'logger': logger(),
                 }
-                if created or overwrite:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([url])
+            if created or overwrite:
+                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+
+            for i in info_dict['entries']:
+                if i == None:
+                    continue
+                try:
+                    metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}
+                except:
+                    metadata = None
+                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                # try:
+                if metadata != None:
+                    song = taglib.File(str(playlist[str(i['playlist_index'])]['filepath']))
+                    self.log.debug(json.dumps(song.tags, indent=4, separators=(',', ': ')))
+                    if metadata != None:
+                        # audiofile.tag.release_date = i["release_year"]
+                        if not song.tags.get("ARTIST"):
+                            self.log.debug(F"REPLACING ARTIST IN { filepath }!! { song.tags.get('ARTIST') } TO { [metadata['artist']] }")
+                            song.tags["ARTIST"] = [metadata["artist"]]
+                        if not song.tags.get("ALBUM"):
+                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[Albumname]}")
+                            song.tags["ALBUM"] = [Albumname]
+                        if not song.tags.get("ALBUMARTIST"):
+                            self.log.debug(F"REPLACING ALBUMARTIST IN { filepath }!! {song.tags.get('ALBUMARTIST')} TO {[metadata['artist']]}")
+                            song.tags["ALBUMARTIST"] = [metadata["artist"]]
+                        if not song.tags.get("TITLE"):
+                            self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[metadata['track']]}")
+                            song.tags["TITLE"] = [metadata["track"]]
+                        if not song.tags.get("TRACKNUMBER"):
+                            self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
+                            song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
+                        if not song.tags.get("DATE") and i.get("release_year"):
+                            self.log.debug(F"REPLACING DATE IN { filepath }!! {song.tags.get('DATE')} TO { [ str( i['release_year'] ) ] }")
+                            song.tags["DATE"] = [str(i["release_year"])]
+                    else:
+                        if not song.tags.get("ALBUM"):
+                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[info_dict['title']]}")
+                            song.tags["ALBUM"] = [info_dict['title']]
+                        if not song.tags.get("TITLE"):
+                            self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[i['title']]}")
+                            song.tags["TITLE"] = [i['title']]
+                        if not song.tags.get("TRACKNUMBER"):
+                            self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
+                            song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
+                    song.save()
+            # except:
+                # self.log.error("")
+
 
         if info_dict['extractor'] == "soundcloud:set":
             if format=='mp3':
@@ -279,32 +281,60 @@ class MusicGetter():
             for i in info_dict['entries']:
                 metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
                 filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
-                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
                 try:
-                    audiofile = eyed3.load(playlist[str(i['playlist_index'])]['filepath'])
-                    if audiofile.tag == None:
-                        audiofile.initTag(version=(2,3,0))
-                    audiofile.tag.artist = i["uploader"]
-                    audiofile.tag.album = info_dict['title']
-                    audiofile.tag.album_artist = i["uploader"]
-                    audiofile.tag.title = i["title"]
-                    audiofile.tag.track_num = i['playlist_index']
-                    audiofile.tag.release_date = i["upload_date"]
-                    audiofile.tag.save()
-                    del audiofile
+                    song = taglib.File(playlist[str(i['playlist_index'])]['filepath'])
+                    if playlist[i]["Metadata"] != None:
+                        song.tags["ARTIST"] = [i["uploader"]]
+                        song.tags["ALBUM"] = [info_dict['title']]
+                        song.tags["ALBUMARTIST"] = [i["uploader"]]
+                        song.tags["TITLE"] = [i["title"]]
+                        song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
+                        song.tags["DATE"] = [str(i["upload_date"])]
+                    else:
+                        song.tags["ALBUM"] = [Albumname]
+                        song.tags["TITLE"] = [playlist[i]['title']]
+                        song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
+                    song.save()
                 except:
                     self.log.error('could not write metadata to ', i['title'])
-            self.album_art_folder(playlist_title=playlist_title, no_embed=True)
 
         if info_dict['extractor_key'] == "BandcampAlbum":
             formats = dict()
             for i in info_dict["entries"]:
                 for j in i["formats"]:
                     formats[j["format_id"]] = j["ext"]
-            if len(formats) > 1 and askformat:
-                print()
+            playlistfile = None
+            if os.path.isfile(os.path.join(path, playlist_title,  F"{playlist_title} playlist.json")):
+                with open(os.path.join(path, playlist_title,  F"{playlist_title} playlist.json"), 'r') as file:
+                    playlistfile = json.load(file)
+            if not overwrite and playlistfile:
+                for i in playlistfile:
+                    format = playlistfile[i]["filename"].split(".")[-1]
+                    formats[format] = format
+                self.log.debug(format)
+            elif len(formats) > 1 and askformat:
+                print("Multiple formats are available for download:")
+                cnt = 1
+                selected = 1
+                for i in formats:
+                    if formats[i] == format:
+                        selected = cnt
+                    print(f"{cnt}: {formats[i]} | {i}")
+                    cnt += 1
+                selection = input(F"Please choose a format [{selected}]: ")
+                if selection == "":
+                    format = list(formats.keys())[selected - 1]
+                else:
+                    selection = int(selection)
+                    format = list(formats.keys())[selection - 1]
+                print(format)
             elif len(formats)==1 and askformat:
-                format = list(format.keys())[0]
+                format = list(formats.keys())[0]
+                self.log.debug(format)
+            else:
+                formats[format] = format
+                self.log.debug(format)
             ydl_opts = {
                 'outtmpl': os.path.join(path, playlist_title, filenamefmt),
                 'format': format,
@@ -317,10 +347,11 @@ class MusicGetter():
             for i in info_dict['entries']:
                 if i == None:
                     continue
-                if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"]};
+                if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"], "release_year": str( time.strftime('%Y', time.localtime( i["release_timestamp"] )) )};
                 else: metadata = None
-                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
-                playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join('playlists', playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                filename=(F"{i['title']}.{formats[format]}").replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
+                filepath = os.path.join(path, playlist_title, filename)
+                playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
                 if metadata["album"] == None:
                     Albumname = playlist_title
                 else:
@@ -328,37 +359,44 @@ class MusicGetter():
                 # try:
                 self.dl_file(i['thumbnails'][0]['url'], (i['title']+'.'+i['thumbnails'][0]['url'].split('.')[-1]).replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?',''), os.path.join(path, playlist_title, 'thumbnails'))
                 if metadata != None:
-                    song = taglib.File(playlist[i]['filepath'])
+                    song = taglib.File(filepath)
+                    self.log.debug(json.dumps(song.tags, indent=4, separators=(',', ': ')))
                     if metadata != None:
-                        if not song.get("ARTIST"):
-                            self.log.debug(F"REPLACING ARTIST IN { playlist[i]['filepath'] }!! { song.get('ARTIST') } TO { [metadata['artist']] }")
-                            song["ARTIST"] = [metadata["artist"]]
-                        if not song.get("ALBUM"):
-                            self.log.debug(F"REPLACING ALBUM IN { playlist[i]['filepath'] }!! {song.get('ALBUM')} TO {[Albumname]}")
-                            song["ALBUM"] = [Albumname]
-                        if not song.get("ALBUMARTIST"):
-                            self.log.debug(F"REPLACING ALBUMARTIST IN { playlist[i]['filepath'] }!! {song.get('ALBUMARTIST')} TO {[metadata['artist']]}")
-                            song["ALBUMARTIST"] = [metadata["artist"]]
-                        if not song.get("TITLE"):
-                            self.log.debug(F"REPLACING TITLE IN { playlist[i]['filepath'] }!! {song.get('TITLE')} TO {[metadata['track']]}")
-                            song["TITLE"] = [metadata["track"]]
-                        if not song.get("TRACKNUMBER"):
-                            self.log.debug(F"REPLACING TRACKNUMBER IN { playlist[i]['filepath'] }!! {song.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
-                            song["TRACKNUMBER"] = [i['playlist_index']]
+                        if not song.tags.get("ARTIST"):
+                            self.log.debug(F"REPLACING ARTIST IN { filepath }!! { song.tags.get('ARTIST') } TO { [metadata['artist']] }")
+                            song.tags["ARTIST"] = [metadata["artist"]]
+                        if not song.tags.get("ALBUM"):
+                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[Albumname]}")
+                            song.tags["ALBUM"] = [Albumname]
+                        if not song.tags.get("ALBUMARTIST"):
+                            self.log.debug(F"REPLACING ALBUMARTIST IN { filepath }!! {song.tags.get('ALBUMARTIST')} TO {[metadata['artist']]}")
+                            song.tags["ALBUMARTIST"] = [metadata["artist"]]
+                        if not song.tags.get("TITLE"):
+                            self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[metadata['track']]}")
+                            song.tags["TITLE"] = [metadata["track"]]
+                        if not song.tags.get("TRACKNUMBER"):
+                            self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
+                            song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
+                        if not song.tags.get("DATE"):
+                            self.log.debug(F"REPLACING DATE IN { filepath }!! {song.tags.get('DATE')} TO { [ metadata['release_year'] ] }")
+                            song.tags["DATE"] = [ metadata["release_year"] ]
+
                     else:
-                        if not song.get("ALBUM"):
-                            self.log.debug(F"REPLACING ALBUM IN { playlist[i]['filepath'] }!! {song.get('ALBUM')} TO {[playlist_title]}")
-                            song["ALBUM"] = [playlist_title]
-                        if not song.get("TITLE"):
-                            self.log.debug(F"REPLACING TITLE IN { playlist[i]['filepath'] }!! {song.get('TITLE')} TO {[i['track']]}")
-                            song["TITLE"] = [i['track']]
-                        if not song.get("TRACKNUMBER"):
-                            self.log.debug(F"REPLACING TRACKNUMBER IN { playlist[i]['filepath'] }!! {song.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
-                            song["TRACKNUMBER"] = [i['playlist_index']]
+                        if not song.tags.get("ALBUM"):
+                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[playlist_title]}")
+                            song.tags["ALBUM"] = [playlist_title]
+                        if not song.tags.get("TITLE"):
+                            self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[i['track']]}")
+                            song.tags["TITLE"] = [i['track']]
+                        if not song.tags.get("TRACKNUMBER"):
+                            self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
+                            song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
                     song.save()
                 # except:
                 #     self.log.error('could not write metadata to '+ i['track'])
         self.dump_json(playlist, F"{playlist_title} playlist.json", os.path.join(path, playlist_title))
+
+        self.album_art_folder(os.path.join(path, playlist_title))
 
     def view_playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
         if not playlist_title and not url: return self.log.error('please pass a url or playlist title')
@@ -385,7 +423,7 @@ class MusicGetter():
                 else:
                     Albumname = playlist[i]["Metadata"]["album"]
                 song = taglib.File(playlist[i]['filepath'])
-                self.log.info(song.tags)
+                self.log.info(json.dumps(song.tags, indent=4, separators=(',', ': ')))
 
     def playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
         if not playlist_title and not url: return self.log.error('please pass a url or playlist title')
@@ -413,37 +451,14 @@ class MusicGetter():
                     Albumname = playlist[i]["Metadata"]["album"]
                 song = taglib.File(playlist[i]['filepath'])
                 if playlist[i]["Metadata"] != None:
-                    song["ARTIST"] = [playlist[i]["Metadata"]["artist"]]
-                    song["ALBUM"] = [Albumname]
-                    song["ALBUMARTIST"] = [playlist[i]["Metadata"]["album_artist"]]
-                    song["TITLE"] = [playlist[i]["Metadata"]["track"]]
-                    song["TRACKNUMBER"] = [i]
+                    song.tags["ARTIST"] = [playlist[i]["Metadata"]["artist"]]
+                    song.tags["ALBUM"] = [Albumname]
+                    song.tags["ALBUMARTIST"] = [playlist[i]["Metadata"]["album_artist"]]
+                    song.tags["TITLE"] = [playlist[i]["Metadata"]["track"]]
+                    song.tags["TRACKNUMBER"] = [i]
                 else:
-                    song["ALBUM"] = [Albumname]
-                    song["TITLE"] = [playlist[i]['title']]
-                    song["TRACKNUMBER"] = [i]
+                    song.tags["ALBUM"] = [Albumname]
+                    song.tags["TITLE"] = [playlist[i]['title']]
+                    song.tags["TRACKNUMBER"] = [i]
                 song.save()
-                # try:
-                #     if playlist[i]["Metadata"] != None:
-                #         audiofile = eyed3.load(playlist[i]['filepath'])
-                #         audiofile.tag.save(version=(2,3,0))
-                #         audiofile = eyed3.load(playlist[i]['filepath'])
-                #         audiofile.tag.artist = playlist[i]["Metadata"]["artist"]
-                #         audiofile.tag.album = Albumname
-                #         audiofile.tag.album_artist = playlist[i]["Metadata"]["album_artist"]
-                #         audiofile.tag.title = playlist[i]["Metadata"]["track"]
-                #         audiofile.tag.track_num = i
-                #         audiofile.tag.save()
-                #         del audiofile
-                #     else:
-                #         audiofile = eyed3.load(playlist[i]['filepath'])
-                #         audiofile.tag.save(version=(2,3,0))
-                #         audiofile = eyed3.load(playlist[i]['filepath'])
-                #         audiofile.tag.album = playlist_title
-                #         audiofile.tag.title = playlist[i]['title']
-                #         audiofile.tag.track_num = i
-                #         audiofile.tag.save()
-                #         del audiofile
-                # except:
-                #     self.log.error('could not write metadata to '+ playlist[i]['title'])
-        # self.album_art_folder(os.path.join(path, playlist_title))
+        self.album_art_folder(os.path.join(path, playlist_title))

@@ -1,5 +1,4 @@
 wheel
-windows-curses
 click
 pyunpack
 mutagen
@@ -9,6 +8,7 @@ pyunpack
 pygame
 gtts
 curses-menu
+depreciated
 playsound
 youtube-dl
 emoji
