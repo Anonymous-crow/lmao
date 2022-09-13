@@ -31,3 +31,5 @@ src/
 */.vs/
 *.jar
 *.txt
+*/env/*
+env/

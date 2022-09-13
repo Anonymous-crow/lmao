@@ -111,7 +111,12 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
             return print('folder '+playlist_title+' does not exist')
         with open(os.path.join(path, playlist_title, playlist_title + ' playlist.json'), 'r') as file:
             playlist = json.load(file)
-
+        exist={}
+        for i in playlist:
+            if not os.path.isfile(os.path.join(path, playlist_title, playlist[i]['filename'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_'))):
+                exist[i]=False
+            else:
+                exist[i]=True
 
         lmao = 1
         if askshuffle:
@@ -153,13 +158,17 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
         while len(songlist) > 0:
             i = songlist.pop(0); history.append(i)
             filename = playlist[i]['filename'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_')
+            filepath = os.path.join(path, playlist_title, filename)
             title = playlist[i]['title']; legnth_s=playlist[i]['duration']; legnth=sec_t_timestamp(legnth_s)
             if playlist[i]['Metadata'] != None:
                 title = playlist[i]['Metadata']['track'] + ' by ' + playlist[i]['Metadata']['artist']
 
             ##try:
+            
+            if not exist[i]:
+                continue
             if lmao:
-                pygame.mixer.music.load(os.path.join(path, playlist_title, filename))
+                pygame.mixer.music.load(filepath)
                 pygame.mixer.music.set_volume(vol)
                 pygame.mixer.music.play()
             ##except:
@@ -168,7 +177,8 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
             nopwin = curses.newwin(int(y_w)-3,int(x_w/2)+2)
             playwin = curses.newwin(int(y_w)-3,0,0,int(x_w/2)+2)
             ctrlwin = curses.newwin( 3, 0, int(y_w)-3, 0)
-            paused=False; song_playing=True
+            song_playing=True
+            paused=False
             while song_playing and lmao:
                 stdscr.clear()
                 # stay in this loop till the user presses 'q'
@@ -187,6 +197,10 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
                 ctrlwin.box()
                 lne = 0
                 for j in playlist:
+                    if not exist[j]:
+                        err = "!"
+                    else:
+                        err = " "
                     lne +=1
                     if j == i:
                         np = '*'
@@ -194,9 +208,9 @@ def music_playlist_player(playlist_title=False, url=False, path='playlists', ask
                         np = ' '
                     try:
                         if playlist[j]["Metadata"] != None:
-                            playwin.addstr(lne, 1, np+j+'. '+playlist[j]["Metadata"]["track"], curses.A_NORMAL)
+                            playwin.addstr(lne, 1, F' {err}{np} {j}. {playlist[j]["Metadata"]["track"]}', curses.A_NORMAL)
                         else:
-                            playwin.addstr(lne, 1, np+j+'. '+playlist[j]["title"], curses.A_NORMAL)
+                            playwin.addstr(lne, 1,F' {err}{np} {j}. {playlist[j]["title"]}', curses.A_NORMAL)
                     except:
                         pass
                 nopwin.addstr(1, 2, 'Now Playing Playlist '+playlist_title, curses.A_BOLD)

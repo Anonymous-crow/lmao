@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, youtube_dl, logging, get_cover_art, json, taglib, time
+import os, youtube_dl, logging, get_cover_art, json, taglib, time, click
 
 def install_ffmpeg(overwrite=False):
     if os.name == 'nt':
@@ -14,6 +14,10 @@ def install_ffmpeg(overwrite=False):
                 sz.extractall(path=os.path.join("resources","ffmpeg","release-full"))
             shutil.copyfile(os.path.join("resources","ffmpeg","release-full","bin","ffmpeg.exe"), 'ffmpeg.exe')
             self.log.debug('copied ffmpeg.exe')
+    
+
+
+
 
 class MusicGetter():
     """docstring for MusicGetter."""
@@ -67,7 +71,7 @@ class MusicGetter():
         finder = get_cover_art.CoverFinder(coverdict)
         finder.scan_folder(path)
 
-    def yt_mp3(self, url, path='downloads', autoplay=True, format='mp3'):
+    def yt_mp3(self, url, path='downloads', format='mp3'):
         install_ffmpeg()
         info_dict = infoget(self, url)
         video_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').translate({ord(i): ' ' for i in "<>:\"/\\|?*"})
@@ -132,8 +136,8 @@ class MusicGetter():
             }
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-        if autoplay: music_player(filename=filename)
 
+    
     def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False):
         created = False
         if not os.path.isfile('ffmpeg.exe'):
@@ -215,10 +219,13 @@ class MusicGetter():
                 except:
                     metadata = None
                 filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
-                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
-                # try:
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]}
                 if metadata != None:
-                    song = taglib.File(str(playlist[str(i['playlist_index'])]['filepath']))
+                    filepath = str(playlist[str(i['playlist_index'])]['filepath'])
+                    try:
+                        song = taglib.File(filepath)
+                    except:
+                        self.log.error(F"could not open {filepath} to write metadata")
                     self.log.debug(json.dumps(song.tags, indent=4, separators=(',', ': ')))
                     if metadata != None:
                         # audiofile.tag.release_date = i["release_year"]
@@ -226,8 +233,8 @@ class MusicGetter():
                             self.log.debug(F"REPLACING ARTIST IN { filepath }!! { song.tags.get('ARTIST') } TO { [metadata['artist']] }")
                             song.tags["ARTIST"] = [metadata["artist"]]
                         if not song.tags.get("ALBUM"):
-                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[Albumname]}")
-                            song.tags["ALBUM"] = [Albumname]
+                            self.log.debug(F"REPLACING ALBUM IN { filepath }!! {song.tags.get('ALBUM')} TO {[metadata['album']]}")
+                            song.tags["ALBUM"] = [metadata["album"]]
                         if not song.tags.get("ALBUMARTIST"):
                             self.log.debug(F"REPLACING ALBUMARTIST IN { filepath }!! {song.tags.get('ALBUMARTIST')} TO {[metadata['artist']]}")
                             song.tags["ALBUMARTIST"] = [metadata["artist"]]
@@ -251,8 +258,6 @@ class MusicGetter():
                             self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
                             song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
                     song.save()
-            # except:
-                # self.log.error("")
 
 
         if info_dict['extractor'] == "soundcloud:set":
@@ -398,6 +403,7 @@ class MusicGetter():
 
         self.album_art_folder(os.path.join(path, playlist_title))
 
+    
     def view_playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
         if not playlist_title and not url: return self.log.error('please pass a url or playlist title')
         if playlist_title and url: return self.log.error('please do not pass both a url and playlist title')
@@ -418,13 +424,15 @@ class MusicGetter():
             except:
                 return self.log.error(F"could not find {playlist_title} metadata.json")
             for i in playlist:
-                if playlist[i]["Metadata"]["album"] == None:
-                    Albumname = playlist_title
-                else:
-                    Albumname = playlist[i]["Metadata"]["album"]
-                song = taglib.File(playlist[i]['filepath'])
+                try:
+                    song = taglib.File(playlist[i]['filepath'])
+                except:
+                    self.log.error(F"could not open {playlist[i]['filepath']}")
+                    continue
+                self.log.info(playlist[i]['filepath'])
                 self.log.info(json.dumps(song.tags, indent=4, separators=(',', ': ')))
 
+    
     def playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
         if not playlist_title and not url: return self.log.error('please pass a url or playlist title')
         if playlist_title and url: return self.log.error('please do not pass both a url and playlist title')
@@ -462,3 +470,56 @@ class MusicGetter():
                     song.tags["TRACKNUMBER"] = [i]
                 song.save()
         self.album_art_folder(os.path.join(path, playlist_title))
+
+@click.group()
+@click.pass_context
+def cli(ctx):
+    """This script downloads music and embeds metadata."""
+    ctx.obj = MusicGetter()
+    ctx.show_default = True
+
+@cli.command()
+@click.option("--playlist-title", default="False")
+@click.option("--url", default="False")
+@click.option("--path", default='playlists')
+@click.pass_obj
+def view_playlist_metadata(obj, playlist_title, url, path):
+    if url == "False":
+        url=False
+    if playlist_title == "False":
+        playlist_title=False
+    obj.view_playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+
+@cli.command()
+@click.option("--playlist-title", default="False")
+@click.option("--url", default="False")
+@click.option("--path", default='playlists')
+@click.pass_obj
+def playlist_metadata(obj, playlist_title, url, path):
+    if url == "False":
+        url=False
+    if playlist_title == "False":
+        playlist_title=False
+    obj.playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+
+@cli.command()
+@click.argument("url")
+@click.option("--overwrite/--no-overwrite", default=False)
+@click.option("--path", default='playlists', help="path to save files to")
+@click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
+@click.option("--ask-format/--no-ask-format", default=True, help="ask for download format")
+@click.option("-e", "--enum", is_flag=True, help="add position in playlist to filename")
+@click.pass_obj
+def yp(obj, url, overwrite, path, format, ask_format, enum: bool):
+    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum)
+
+@cli.command()
+@click.argument("url")
+@click.option("--path", default='downloads', help="path to save files to")
+@click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
+@click.pass_obj
+def yt(obj, url, path, format):
+    obj.yt_mp3(url, path=path, format=format)
+
+if __name__ == "__main__": 
+    cli()

@@ -8,7 +8,6 @@ pyunpack
 pygame
 gtts
 curses-menu
-depreciated
 playsound
 youtube-dl
 emoji
