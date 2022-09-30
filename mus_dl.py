@@ -124,7 +124,7 @@ class MusicGetter():
                     song.tags["DATE"] = [str(info_dict["release_year"])]
             else:
                 if not song.tags.get("TITLE"):
-                    self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[i['title']]}")
+                    self.log.debug(F"REPLACING TITLE IN { filepath }!! {song.tags.get('TITLE')} TO {[info_dict['title']]}")
                     song.tags["TITLE"] = [info_dict['title']]
             song.save()
         
