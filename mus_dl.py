@@ -424,8 +424,8 @@ class MusicGetter():
                             self.log.debug(F"REPLACING TRACKNUMBER IN { filepath }!! {song.tags.get('TRACKNUMBER')} TO {[i['playlist_index']]}")
                             song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
                     song.save()
-                # except:
-                #     self.log.error('could not write metadata to '+ i['track'])
+        
+
         self.dump_json(playlist, F"{playlist_title} playlist.json", os.path.join(path, playlist_title))
 
         self.album_art_folder(os.path.join(path, playlist_title))
@@ -547,6 +547,22 @@ def yp(obj, url, overwrite, path, format, ask_format, enum: bool):
 @click.pass_obj
 def yt(obj, url, path, format):
     obj.yt_mp3(url, path=path, format=format)
+
+@cli.command()
+@click.argument("url")
+@click.pass_obj
+def getinfo(obj, url):
+    """gets info on the given url"""
+    click.echo(obj.infoget(url))
+
+@cli.command()
+@click.argument("url")
+@click.option("--path", default='', help="path to save files to")
+@click.option("-f", "--filename", default='info.json', help="filename")
+@click.pass_obj
+def dumpinfo(obj, url, path, filename):
+    """dumps info from a url to a file"""
+    obj.dump_json(obj.infoget(url), filename = filename, path = path)
 
 if __name__ == "__main__": 
     cli()
