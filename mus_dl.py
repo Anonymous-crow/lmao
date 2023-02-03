@@ -428,7 +428,7 @@ class MusicGetter():
 
         self.dump_json(playlist, F"{playlist_title} playlist.json", os.path.join(path, playlist_title))
 
-        self.album_art_folder(os.path.join(path, playlist_title))
+        self.album_art_folder(os.path.join(path, playlist_title), no_embed = True)
 
     
     def view_playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
@@ -460,7 +460,7 @@ class MusicGetter():
                 self.log.info(json.dumps(song.tags, indent=4, separators=(',', ': ')))
 
     
-    def playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
+    def playlist_metadata(self, playlist_title=False, url=False, path='playlists', album_art=True):
         if not playlist_title and not url: return self.log.error('please pass a url or playlist title')
         if playlist_title and url: return self.log.error('please do not pass both a url and playlist title')
         if url:
@@ -484,7 +484,10 @@ class MusicGetter():
                     Albumname = playlist_title
                 else:
                     Albumname = playlist[i]["Metadata"]["album"]
-                song = taglib.File(playlist[i]['filepath'])
+                try:
+                    song = taglib.File(playlist[i]['filepath'])
+                except OSError:
+                    self.log.error(F"could not find {playlist[i]['filepath']}")
                 if playlist[i]["Metadata"] != None:
                     song.tags["ARTIST"] = [playlist[i]["Metadata"]["artist"]]
                     song.tags["ALBUM"] = [Albumname]
@@ -496,7 +499,8 @@ class MusicGetter():
                     song.tags["TITLE"] = [playlist[i]['title']]
                     song.tags["TRACKNUMBER"] = [i]
                 song.save()
-        self.album_art_folder(os.path.join(path, playlist_title))
+        if album_art:
+            self.album_art_folder(os.path.join(path, playlist_title))
 
 @click.group()
 @click.pass_context
@@ -521,8 +525,9 @@ def view_playlist_metadata(obj, playlist_title, url, path):
 @click.option("--playlist-title", "-t", default="False")
 @click.option("--url", default="False")
 @click.option("--path", default='playlists')
+@click.option("--album-art/--no-album-art", default=False, help="download album art from the internet")
 @click.pass_obj
-def playlist_metadata(obj, playlist_title, url, path):
+def playlist_metadata(obj, playlist_title, url, path, album_art):
     if url == "False":
         url=False
     if playlist_title == "False":

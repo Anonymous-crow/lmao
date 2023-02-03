@@ -15,9 +15,9 @@ def main():
     menu.items.append(submenu_item)
 
     ytmenu = CursesMenu("YT", "Download using youtube-dl")
-    yt1 = CommandItem("YT MP3", 'python ./lmao.py -yt')
-    yt2 = CommandItem("YT PLAYLIST MP3", 'python ./lmao.py -yp')
-    yt3 = CommandItem("YT LIVE", 'python ./lmao.py -yl')
+    yt1 = CommandItem("YT MP3", 'python lmao.py -yt')
+    yt2 = CommandItem("YT PLAYLIST MP3", 'python lmao.py -yp')
+    yt3 = CommandItem("YT LIVE", 'python lmao.py -yl')
     ytmenu.append_item(yt1)
     ytmenu.append_item(yt2)
     ytmenu.append_item(yt3)
@@ -25,7 +25,7 @@ def main():
     menu.items.append(ytmenu_item)
 
     playermenu = CursesMenu("Music Player", "Play Music")
-    player1 = CommandItem("Playlist Player", 'python')
+    player1 = CommandItem("Playlist Player", 'python lmao.py -pp')
     playermenu.append_item(player1)
     playermenu_item = SubmenuItem("Music Player", submenu=playermenu)
     menu.items.append(playermenu_item)
@@ -41,7 +41,7 @@ def main():
     menu.show()
 
 def makemenu(list, title='Please Select One'):
-    return CursesMenu.get_selection(list, title)
+    return list[CursesMenu.get_selection(list, title)]
 
 
 if __name__ == "__main__":

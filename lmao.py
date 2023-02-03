@@ -1,13 +1,76 @@
 #!/usr/bin/env python3
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import logging, random, time, base64, json, youtube_dl, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys
+import logging, random, time, base64, json, youtube_dl, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys, click
 from mus_dl import MusicGetter
 
 mg = MusicGetter()
 
-def install_dependencies():
-    os.system('python -m pip install -U windows-curses pyunpack mutagen get_cover_art patool pygame gtts curses-menu playsound youtube-dl pafy pyglet opencv-python emoji python-dotenv twitchio eyed3 --user')
+@click.group()
+@click.pass_context
+def cli(ctx):
+    """This script downloads music and embeds metadata, and has the option for playing it in the terminal"""
+    ctx.obj = MusicGetter()
+    ctx.show_default = True
+
+@cli.command()
+@click.option("--playlist-title", "-t", default="False")
+@click.option("--url", default="False")
+@click.option("--path", default='playlists')
+@click.pass_obj
+def view_playlist_metadata(obj, playlist_title, url, path):
+    if url == "False":
+        url=False
+    if playlist_title == "False":
+        playlist_title=False
+    obj.view_playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+
+@cli.command()
+@click.option("--playlist-title", "-t", default="False")
+@click.option("--url", default="False")
+@click.option("--path", default='playlists')
+@click.pass_obj
+def playlist_metadata(obj, playlist_title, url, path):
+    if url == "False":
+        url=False
+    if playlist_title == "False":
+        playlist_title=False
+    obj.playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+
+@cli.command()
+@click.argument("url")
+@click.option("--overwrite/--no-overwrite", default=False)
+@click.option("--path", default='playlists', help="path to save files to")
+@click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
+@click.option("--ask-format/--no-ask-format", default=True, help="ask for download format")
+@click.option("-e", "--enum", is_flag=True, help="add position in playlist to filename")
+@click.pass_obj
+def yp(obj, url, overwrite, path, format, ask_format, enum: bool):
+    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum)
+
+@cli.command()
+@click.argument("url")
+@click.option("--path", default='downloads', help="path to save files to")
+@click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
+@click.pass_obj
+def yt(obj, url, path, format):
+    obj.yt_mp3(url, path=path, format=format)
+
+@cli.command()
+@click.argument("url")
+@click.pass_obj
+def getinfo(obj, url):
+    """gets info on the given url"""
+    click.echo(obj.infoget(url))
+
+@cli.command()
+@click.argument("url")
+@click.option("--path", default='', help="path to save files to")
+@click.option("-f", "--filename", default='info.json', help="filename")
+@click.pass_obj
+def dumpinfo(obj, url, path, filename):
+    """dumps info from a url to a file"""
+    obj.dump_json(obj.infoget(url), filename = filename, path = path)
 
 def sec_t_timestamp(sec):
     import time
@@ -35,7 +98,7 @@ class logger():
     def error(self, msg):
         print(msg)
 
-logging.basicConfig(filename="info.log", level=logging.INFO)
+logging.basicConfig(filename="info.log", encoding='utf-8', level=logging.DEBUG)
 
 def b64_encode_img(imgpth):
     return base64.b64encode(open(imgpth, 'rb').read()).decode('utf-8')
@@ -275,13 +338,16 @@ def music_playlist_player_menu(path='playlists', askshuffle=True):
         Playlists = os.listdir(path2); Playlists.append('Download New Playlist'); Playlists.append('..'); Playlists.append('Cancel')
         import MenuLibrary as ML
         playlist_title = ML.makemenu(Playlists)
+        logging.info(playlist_title)
         if playlist_title == 'Cancel':
             return 0
         if playlist_title == 'Download New Playlist':
             yt_playlist_mp3_menu()
         if playlist_title == '..':
             path2 = os.path.join(path2, '..')
+            logging.info(path2)
         elif os.path.isdir(os.path.join(path2, playlist_title)):
+            logging.info(os.path.join(path2, playlist_title))
             # if os.path.isfile(os.path.join(path2, playlist_title, playlist_title+' playlist.json')):
             if os.path.isfile(os.path.join(path2, playlist_title, playlist_title+' playlist.json')):
                 music_playlist_player(playlist_title=playlist_title, path=path2, askshuffle=askshuffle)
