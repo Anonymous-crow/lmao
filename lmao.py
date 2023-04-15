@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import logging, random, time, base64, json, youtube_dl, threading, pygame, eyed3, asyncio, twitchio as tio, shutil, sys, click
+import logging, cv2, random, time, base64, json, youtube_dl, pygame, asyncio, twitchio as tio, shutil, click
 from mus_dl import MusicGetter
 
 mg = MusicGetter()
@@ -536,7 +536,7 @@ def yt_playlist_mp3_menu(lmao=''):
     if overwrite == '': overwrite = False
     if overwrite == 'y': overwrite = True
     if overwrite == 'n': overwrite = False
-    yt_playlist_mp3(url, path=path, autoplay=autoplay, overwrite=overwrite)
+    mg.yt_playlist_mp3(url, path=path, autoplay=autoplay, overwrite=overwrite)
 
 def yt_mp3_menu(lmao=''):
     path = 'downloads'; autoplay = True
@@ -545,7 +545,7 @@ def yt_mp3_menu(lmao=''):
     if autoplay == '': autoplay = True;
     if autoplay == 'y': autoplay = True
     if autoplay == 'n': autoplay = False
-    yt_mp3(url, path, autoplay)
+    mg.yt_mp3(url, path, autoplay)
 
 def install_chromium():
     import zipfile
@@ -640,7 +640,6 @@ def Followinge(url):
 
 def parseimages(folder = '\\'):
     if not os.path.isdir(folder + '/'): return None
-    import cv2
     images = []
     for filename in os.listdir(folder):
         img = cv2.imread(os.path.join(folder,filename))
@@ -650,7 +649,7 @@ def parseimages(folder = '\\'):
 
 def parseimages_dict(folder = '\\'):
     if not os.path.isdir(folder + '/'): return None
-    import cv2; images = {}
+    images = {}
     for filename in os.listdir(folder):
         img = cv2.imread(os.path.join(folder,filename))
         if img is not None: images[str(filename.split('.')[0])]=os.path.join(folder,filename)
@@ -783,13 +782,6 @@ def menu():
         else: argopts.append((arg, i))
     if 'h' in arglist:
         return print('LMAO.PY\n\nuhhhhhh cant help you just look in the code or something, just run with -i to install dependencies')
-    if 'i' in arglist:
-        install_dependencies()
-    if 'g' in arglist:
-        ytargopts = []
-        for i in argopts:
-            if i[0] == 'g': ytargopts.append(i[1])
-        return infoget(ytargopts[0])
     if 'yt' in arglist or '-youtube_mp3' in arglist:
         ytargopts = []; ytarguments = {'path':'downloads'}
         for i in argopts:
@@ -803,7 +795,7 @@ def menu():
             if v == 'True': v=True
             if v == 'False': v=False
             ytarguments[k] = v
-        return yt_mp3(**ytarguments)
+        return mg.yt_mp3(**ytarguments)
     if 'yp' in arglist or '-youtube_mp3_playlist' in arglist:
         ypargopts = []; yparguments = {'overwrite':False, 'path':'playlists'}
         for i in argopts:
@@ -838,16 +830,6 @@ def menu():
             if v == 'False': v=False
             vpmarguments[k] = v
         return mg.view_playlist_metadata(**vpmarguments)
-    if 'aa' in arglist:
-        aaargopts = []; aaarguments = {'playlist_title':False, 'url':False, 'path':'playlists'}
-        for i in argopts:
-            if i[0] == 'aa': aaargopts.append(i[1])
-        for i in aaargopts:
-            k,v = i.split('=',1)
-            if v == 'True': v=True
-            if v == 'False': v=False
-            aaarguments[k] = v
-        return album_art_folder(**aaarguments)
     if 'pp' in arglist:
         ppargopts = []; pparguments = {'playlist_title':False, 'url':False, 'path':'playlists', 'askshuffle':True}
         for i in argopts:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, youtube_dl, logging, get_cover_art, json, taglib, time, click
+import os, yt_dlp, logging, get_cover_art, json, taglib, time, click
 
 def install_ffmpeg(overwrite=False):
     if os.name == 'nt':
@@ -53,13 +53,14 @@ class MusicGetter():
         with open(os.path.join(path, filename), 'w') as file:
             json.dump(data, file, indent=4, separators=(',', ': '))
 
-    def infoget(self, url):
+    def infoget(self, url : str, opts : dict = {}):
         ydl_opts = {
-        'ignoreerrors': True
+            'ignoreerrors': True
         }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl_opts.update(opts)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
-        self.log.debug(json.dumps(info_dict, indent=4, separators=(',', ': ')))
+        self.log.debug(json.dumps(ydl.sanitize_info(info_dict), indent=4, separators=(',', ': ')))
         return info_dict
 
     def album_art_folder(self, path, force=True, no_embed=False):
@@ -73,7 +74,7 @@ class MusicGetter():
 
     def yt_mp3(self, url, path='downloads', format='mp3'):
         install_ffmpeg()
-        info_dict = self.infoget(url)
+        info_dict = self.infoget(url, opts = {'noplaylist': True})
         video_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').translate({ord(i): ' ' for i in "<>:\"/\\|?*"})
         filename = video_title + "." + format
         if format=='mp3':
@@ -90,7 +91,7 @@ class MusicGetter():
                         'preferredquality': '192',
                     }],
                 }
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
             #clear()
             filepath = os.path.join(path, filename)
@@ -144,7 +145,7 @@ class MusicGetter():
                         'preferredquality': '300',
                     }],
                 }
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
                 if not os.path.isdir(path): os.mkdir(path)
             else:
@@ -158,7 +159,7 @@ class MusicGetter():
                 'ignoreerrors': True,
                 'noplaylist': True,
             }
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
         return 0
 
@@ -186,8 +187,9 @@ class MusicGetter():
 
             formats = dict()
             for i in info_dict["entries"]:
-                for j in i["formats"]:
-                    formats[j["format_id"]] = j["ext"]
+                if i != None:
+                    for j in i["formats"]:
+                        formats[j["format_id"]] = j["ext"]
 
             cnt = 1
             selected = 1
@@ -235,7 +237,7 @@ class MusicGetter():
                     ##'logger': logger(),
                 }
             if created or overwrite:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
 
             for i in info_dict['entries']:
@@ -308,7 +310,7 @@ class MusicGetter():
                     ##'logger': logger(),
                 }
             if created or overwrite:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
             for i in info_dict['entries']:
                 metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
@@ -374,7 +376,7 @@ class MusicGetter():
                 ##'logger': logger(),
             }
             if created or overwrite:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
             for i in info_dict['entries']:
                 if i == None:
@@ -436,7 +438,7 @@ class MusicGetter():
         if playlist_title and url: return self.log.error('please do not pass both a url and playlist title')
         if url:
             ydl_opts = {}
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(url, download=False)
                 playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
         if playlist_title:
@@ -465,7 +467,7 @@ class MusicGetter():
         if playlist_title and url: return self.log.error('please do not pass both a url and playlist title')
         if url:
             ydl_opts = {}
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(url, download=False)
                 playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
         if playlist_title:
