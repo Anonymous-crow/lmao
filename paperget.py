@@ -32,11 +32,11 @@ if __name__ == "__main__":
 
     vers=dl_json('https://papermc.io/api/v2/projects/paper')["versions"][-1]
     print(vers)
-    build=dl_json('https://papermc.io/api//v2/projects/paper/versions/'+vers)['builds'][-1]
+    build=dl_json('https://papermc.io/api/v2/projects/paper/versions/'+vers)['builds'][-1]
     print(build)
-    dwnld=dl_json('https://papermc.io/api//v2/projects/paper/versions/'+vers+'/builds/'+str(build))["downloads"]['application']
+    dwnld=dl_json('https://papermc.io/api/v2/projects/paper/versions/'+vers+'/builds/'+str(build))["downloads"]['application']
     print(dwnld)
-    if not os.path.isfile(os.path.join(dir, "src", dwnld['name'])): dl_file(F'https://papermc.io/api//v2/projects/paper/versions/{vers}/builds/{str(build)}/downloads/{dwnld["name"]}', dwnld['name'], path=os.path.join(dir, "src"))
+    if not os.path.isfile(os.path.join(dir, "src", dwnld['name'])): dl_file(F'https://papermc.io/api/v2/projects/paper/versions/{vers}/builds/{str(build)}/downloads/{dwnld["name"]}', dwnld['name'], path=os.path.join(dir, "src"))
     os.chdir(os.path.join(dir, "src"))
     os.system(F"java -jar \"{dir}\src\{dwnld['name']}\" nogui")
     sys.exit()
