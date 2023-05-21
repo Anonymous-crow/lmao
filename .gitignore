@@ -27,6 +27,8 @@ downloads/
 zynsubfx/
 synthh/
 Discord/enc/
+.vs/
+.vscode/
 */resources/
 src/
 *.bat
