@@ -318,7 +318,7 @@ class MusicGetter():
                 playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
                 try:
                     song = taglib.File(playlist[str(i['playlist_index'])]['filepath'])
-                    if playlist[i]["Metadata"] != None:
+                    if playlist[str(i['playlist_index'])]["Metadata"] != None:
                         song.tags["ARTIST"] = [i["uploader"]]
                         song.tags["ALBUM"] = [info_dict['title']]
                         song.tags["ALBUMARTIST"] = [i["uploader"]]
@@ -331,7 +331,7 @@ class MusicGetter():
                         song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
                     song.save()
                 except:
-                    self.log.error('could not write metadata to ', i['title'])
+                    self.log.error(F"could not write metadata to {i['title']}")
 
         if info_dict['extractor_key'] == "BandcampAlbum":
             formats = dict()
