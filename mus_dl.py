@@ -164,7 +164,7 @@ class MusicGetter():
         return 0
 
     
-    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False):
+    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False, albumart_no_embed=True):
         created = False
         if not os.path.isfile('ffmpeg.exe'):
             install_ffmpeg()
@@ -383,7 +383,7 @@ class MusicGetter():
                     continue
                 if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"], "release_year": str( time.strftime('%Y', time.localtime( i["release_timestamp"] )) )};
                 else: metadata = None
-                filename=(F"{i['title']}.{formats[format]}").replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
+                filename=(F"{i['title']}.{formats[format]}").replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','？')
                 filepath = os.path.join(path, playlist_title, filename)
                 playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
                 if metadata["album"] == None:
@@ -430,7 +430,7 @@ class MusicGetter():
 
         self.dump_json(playlist, F"{playlist_title} playlist.json", os.path.join(path, playlist_title))
 
-        self.album_art_folder(os.path.join(path, playlist_title), no_embed = True)
+        self.album_art_folder(os.path.join(path, playlist_title), no_embed = albumart_no_embed)
 
     
     def view_playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
@@ -539,13 +539,14 @@ def playlist_metadata(obj, playlist_title, url, path, album_art):
 @cli.command()
 @click.argument("url")
 @click.option("--overwrite/--no-overwrite", default=False)
-@click.option("--path", default='playlists', help="path to save files to")
+@click.option("-p", "--path", default='playlists', help="path to save files to")
 @click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
 @click.option("--ask-format/--no-ask-format", default=True, help="ask for download format")
 @click.option("-e", "--enum", is_flag=True, help="add position in playlist to filename")
+@click.option("-a", "--album-art", is_flag=True, help="embed album art instead of only downloading it")
 @click.pass_obj
-def yp(obj, url, overwrite, path, format, ask_format, enum: bool):
-    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum)
+def yp(obj, url, overwrite, path, format, ask_format, enum: bool, album_art: bool):
+    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum, albumart_no_embed=(not album_art) )
 
 @cli.command()
 @click.argument("url")
