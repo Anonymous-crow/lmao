@@ -55,12 +55,16 @@ class MusicGetter():
 
     def infoget(self, url : str, opts : dict = {}):
         ydl_opts = {
-            'ignoreerrors': True
+            'skip_download': True,
+            'simulate': True,
+            'ignoreerrors': True,
+            'clean_infojson': False
         }
         ydl_opts.update(opts)
+        self.log.debug(ydl_opts)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=False)
-        self.log.debug(json.dumps(ydl.sanitize_info(info_dict), indent=4, separators=(',', ': ')))
+            info_dict = ydl.sanitize_info(ydl.extract_info(url, download=False))
+        self.log.debug(json.dumps(info_dict, indent=4, separators=(',', ': ')))
         return info_dict
 
     def album_art_folder(self, path, force=True, no_embed=False):
@@ -84,6 +88,7 @@ class MusicGetter():
                     'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
                     'format': 'bestaudio/best',
                     'ignoreerrors': True,
+                    'clean_infojson': False,
                     'noplaylist': True,
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
@@ -135,6 +140,7 @@ class MusicGetter():
                     'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
                     'format': 'bestaudio/best',
                     'ignoreerrors': True,
+                    'clean_infojson': False,
                     'noplaylist': True,
                     # 'extract-audio': True,
                     # 'audio-format': 'flac',
@@ -155,6 +161,7 @@ class MusicGetter():
                 'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
                 'format': format,
                 'embed-thumbnail': True,
+                'clean_infojson': False,
                 'add-metadata': True,
                 'ignoreerrors': True,
                 'noplaylist': True,
@@ -163,49 +170,37 @@ class MusicGetter():
                 ydl.download([url])
         return 0
 
+
+    def check_extractor(self, url):
+        extractors = yt_dlp.extractor.list_extractors()
+        return next((ie.ie_key() for ie in extractors if ie.suitable(url) and ie.ie_key() != 'Generic'), None)
+
     
-    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False, albumart_no_embed=True):
+    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False, albumart_no_embed=True, dump_metadata_first=False):
         created = False
         if not os.path.isfile('ffmpeg.exe'):
             install_ffmpeg()
-        info_dict = self.infoget(url)
-        try:
-            playlist_title = info_dict['title'].replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').translate({ord(i): ' ' for i in "<>:\"/\\|?*"})
-        except:
-            playlist_title = info_dict['id']
-        if not os.path.isdir(os.path.join(path, playlist_title)):
-            created = True
-            os.makedirs(os.path.join(path, playlist_title))
-        self.dump_json(info_dict, F"{playlist_title} metadata.json", os.path.join(path, playlist_title))
+        extractor = next((ie.ie_key() for ie in yt_dlp.extractor.list_extractors() if ie.suitable(url) and ie.ie_key() != 'Generic'), None)
+        if dump_metadata_first:
+            info_dict = self.infoget(url, {'extract_flat': 'in_playlist'})
+            self.dump_json(info_dict, "metadata.json", ".")
         if enum:
-            filenamefmt='%(playlist_index)s - %(title)s.%(ext)s'
+            filenamefmt=os.path.join(path, "%(playlist)s", "%(playlist_index&{} - |)s%(title)s.%(ext)s")
         else:
-            filenamefmt='%(title)s.%(ext)s'
+            filenamefmt=os.path.join(path, "%(playlist)s", "%(title)s.%(ext)s")
 
         playlist = {}
-        if info_dict['extractor_key'] == "YoutubeTab":
-
-            formats = dict()
-            for i in info_dict["entries"]:
-                if i != None:
-                    for j in i["formats"]:
-                        formats[j["format_id"]] = j["ext"]
-
-            cnt = 1
-            selected = 1
-            for i in formats:
-                if formats[i] == format:
-                    selected = cnt
-                self.log.debug(f"{cnt}: {formats[i]} | {i}")
-                cnt += 1
+        if extractor == "YoutubeTab":
 
             if format=='mp3':
                 ydl_opts = {
-                    'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                    'outtmpl': filenamefmt,
                     'ignoreerrors': True,
+                    'clean_infojson': False,
                     ##'logger': logger(),
                     'format': 'bestaudio/best',
                     'yesplaylist': True,
+                    'forceprint': {'after_move': ['filepath']},
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
@@ -214,14 +209,16 @@ class MusicGetter():
                 }
             elif format=='flac':
                 ydl_opts = {
-                    'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                    'outtmpl': filenamefmt,
                     'format': 'bestaudio/best',
                     'ignoreerrors': True,
+                    'clean_infojson': False,
                     ##'logger': logger(),
                     'yesplaylist': True,
                     # 'extract-audio': True,
                     # 'audio-format': 'flac',
                     # 'audio-quality': '0',
+                    'forceprint': {'after_move': ['filepath']},
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'flac',
@@ -230,15 +227,26 @@ class MusicGetter():
                 }
             else:
                 ydl_opts = {
-                    'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                    'outtmpl': filenamefmt,
                     'format': format,
                     'yesplaylist': True,
                     'ignoreerrors': True,
+                    'clean_infojson': False,
+                    'forceprint': {'after_move': ['filepath']},
                     ##'logger': logger(),
                 }
-            if created or overwrite:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+            # if created or overwrite:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # ydl.download([url])
+                info_dict = ydl.sanitize_info(ydl.extract_info(url))
+            
+            for i in info_dict['entries']:
+                if 'requested_downloads' in i and len(i['requested_downloads']):
+                    playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
+                    break
+            playlist_title = os.path.basename(playlist_path)
+
+            self.dump_json(info_dict, F"{playlist_title} metadata.json", playlist_path)
 
             for i in info_dict['entries']:
                 if i == None:
@@ -247,9 +255,9 @@ class MusicGetter():
                     metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}
                 except:
                     metadata = None
-                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','').replace('*','_')
-                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]}
-                filepath = str(playlist[str(i['playlist_index'])]['filepath'])
+                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                filepath = os.path.join(playlist_path, filename)
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]}
                 try:
                     song = taglib.File(filepath)
                 except:
@@ -288,11 +296,10 @@ class MusicGetter():
                         song.tags["TRACKNUMBER"] = [str(i['playlist_index'])]
                 song.save()
 
-
-        if info_dict['extractor'] == "soundcloud:set":
+        if extractor == "SoundcloudSet":
             if format=='mp3':
                 ydl_opts = {
-                    'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                    'outtmpl': filenamefmt,
                     'ignoreerrors': True,
                     ##'logger': logger(),
                     'format': 'bestaudio/best',
@@ -300,24 +307,35 @@ class MusicGetter():
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
                         'preferredquality': '256',
+                        'forceprint': {'after_move': ['filepath']},
                     }],
                 }
             else:
                 ydl_opts = {
-                    'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                    'outtmpl': filenamefmt,
                     'format': format,
                     'ignoreerrors': True,
+                    'forceprint': {'after_move': ['filepath']},
                     ##'logger': logger(),
                 }
+
             if created or overwrite:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+                    info_dict = ydl.sanitize_info(ydl.extract_info(url))
+
+            for i in info_dict['entries']:
+                if 'requested_downloads' in i and len(i['requested_downloads']):
+                    playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
+                    break
+            playlist_title = os.path.basename(playlist_path)
+
             for i in info_dict['entries']:
                 metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
-                filename=(i['title']+'.mp3').replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','')
-                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                filepath = os.path.join(playlist_path, filename)
+                playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]};
                 try:
-                    song = taglib.File(playlist[str(i['playlist_index'])]['filepath'])
+                    song = taglib.File(filepath)
                     if playlist[str(i['playlist_index'])]["Metadata"] != None:
                         song.tags["ARTIST"] = [i["uploader"]]
                         song.tags["ALBUM"] = [info_dict['title']]
@@ -333,14 +351,22 @@ class MusicGetter():
                 except:
                     self.log.error(F"could not write metadata to {i['title']}")
 
-        if info_dict['extractor_key'] == "BandcampAlbum":
+        if extractor == "BandcampAlbum":
+            info_dict = self.infoget(url)
+
+            for i in info_dict['entries']:
+                if 'requested_downloads' in i and len(i['requested_downloads']):
+                    playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
+                    break
+            playlist_title = os.path.basename(playlist_path)
+
             formats = dict()
             for i in info_dict["entries"]:
                 for j in i["formats"]:
                     formats[j["format_id"]] = j["ext"]
             playlistfile = None
-            if os.path.isfile(os.path.join(path, playlist_title,  F"{playlist_title} playlist.json")):
-                with open(os.path.join(path, playlist_title,  F"{playlist_title} playlist.json"), 'r') as file:
+            if os.path.isfile(os.path.join(playlist_path,  F"{playlist_title} playlist.json")):
+                with open(os.path.join(playlist_path,  F"{playlist_title} playlist.json"), 'r') as file:
                     playlistfile = json.load(file)
             if not overwrite and playlistfile:
                 for i in playlistfile:
@@ -370,22 +396,24 @@ class MusicGetter():
                 formats[format] = format
                 self.log.debug(format)
             ydl_opts = {
-                'outtmpl': os.path.join(path, playlist_title, filenamefmt),
+                'forceprint': {'after_move': ['filepath']},
+                'outtmpl': filenamefmt,
                 'format': format,
                 'ignoreerrors': True,
+                'clean_infojson': False,
                 ##'logger': logger(),
             }
-            if created or overwrite:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+            # if created or overwrite:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.sanitize_info(ydl.extract_info(url))
             for i in info_dict['entries']:
                 if i == None:
                     continue
                 if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"], "release_year": str( time.strftime('%Y', time.localtime( i["release_timestamp"] )) )};
                 else: metadata = None
-                filename=(F"{i['title']}.{formats[format]}").replace(':', ' -').replace('"', '\'').replace("'", "\'").replace('|', '_').replace('|', '_').replace('//','_').replace('/','_').replace('?','？')
-                filepath = os.path.join(path, playlist_title, filename)
-                playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': os.path.join(path, playlist_title, filename), 'Metadata': metadata, 'duration': i["duration"]};
+                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                filepath = os.path.join(playlist_path, filename)
+                playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]};
                 if metadata["album"] == None:
                     Albumname = playlist_title
                 else:
@@ -428,7 +456,8 @@ class MusicGetter():
                     song.save()
         
 
-        self.dump_json(playlist, F"{playlist_title} playlist.json", os.path.join(path, playlist_title))
+        self.dump_json(playlist, F"{playlist_title} playlist.json", playlist_path)
+        self.dump_json(info_dict, F"{playlist_title} metadata.json", playlist_path)
 
         self.album_art_folder(os.path.join(path, playlist_title), no_embed = albumart_no_embed)
 
@@ -522,6 +551,13 @@ def view_playlist_metadata(obj, playlist_title, url, path):
     if playlist_title == "False":
         playlist_title=False
     obj.view_playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+
+@cli.command()
+@click.argument("url")
+@click.pass_obj
+def check_extractor(obj, url):
+    """check yt-dlp extractor"""
+    click.echo(obj.check_extractor(url))
 
 @cli.command()
 @click.option("--playlist-title", "-t", default="False")
