@@ -32,7 +32,7 @@ class MusicGetter():
             ch.setFormatter(formatter)
             self.log.addHandler(ch)
 
-    def dl_file(self, url, filename='', path=''):
+    def dl_file(self, url, filename='', path='', return_content=False):
         import requests
         headers = requests.utils.default_headers()
         x = requests.get(url, headers=headers, allow_redirects=True)
@@ -45,6 +45,8 @@ class MusicGetter():
             if not os.path.isdir(path): os.makedirs(path)
             with open(os.path.join(path,filename), 'wb') as file:
                 file.write(x.content); file.close()
+        if return_content:
+            return x.content
 
     def dump_json(self, data, filename, path = ""):
         if path != "":
@@ -176,7 +178,7 @@ class MusicGetter():
         return next((ie.ie_key() for ie in extractors if ie.suitable(url) and ie.ie_key() != 'Generic'), None)
 
     
-    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False, albumart_no_embed=True, dump_metadata_first=False):
+    def yt_playlist_mp3(self, url, overwrite=False, path='playlists', format='mp3', askformat=True, enum=False, albumart=True, albumart_no_embed=True, dump_metadata_first=False):
         created = False
         if not os.path.isfile('ffmpeg.exe'):
             install_ffmpeg()
@@ -240,11 +242,26 @@ class MusicGetter():
                 # ydl.download([url])
                 info_dict = ydl.sanitize_info(ydl.extract_info(url))
             
+            json_download_location = False
+            playlist_path = None
             for i in info_dict['entries']:
                 if 'requested_downloads' in i and len(i['requested_downloads']):
                     playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
+                    json_download_location = True
                     break
-            playlist_title = os.path.basename(playlist_path)
+
+            if not playlist_path:
+                with yt_dlp.YoutubeDL({ 'skip_download': True, 'ignoreerrors': True, 'clean_infojson': False}) as ydl:
+                    for i in info_dict['entries']:
+                        try:
+                            playlist_path = os.path.dirname(os.path.normpath(ydl.prepare_filename(i)))
+                            break
+                        except:
+                            pass
+
+                playlist_title = os.path.basename(os.path.normpath(playlist_path))
+            else:
+                playlist_title = os.path.basename(playlist_path)
 
             self.dump_json(info_dict, F"{playlist_title} metadata.json", playlist_path)
 
@@ -255,8 +272,12 @@ class MusicGetter():
                     metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i['creator']}
                 except:
                     metadata = None
-                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
-                filepath = os.path.join(playlist_path, filename)
+                if json_download_location:
+                    filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                    filepath = os.path.normpath(i['requested_downloads'][0]["filepath"])
+                else:
+                    filepath = ydl.prepare_filename(i)
+                    filename = os.path.basename(os.path.normpath(filepath))
                 playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]}
                 try:
                     song = taglib.File(filepath)
@@ -303,37 +324,58 @@ class MusicGetter():
                     'ignoreerrors': True,
                     ##'logger': logger(),
                     'format': 'bestaudio/best',
+                    'clean_infojson': False,
+                    'forceprint': {'after_move': ['filepath']},
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
                         'preferredquality': '256',
-                        'forceprint': {'after_move': ['filepath']},
                     }],
                 }
             else:
                 ydl_opts = {
+                    'forceprint': {'after_move': ['filepath']},
+                    'clean_infojson': False,
                     'outtmpl': filenamefmt,
                     'format': format,
                     'ignoreerrors': True,
-                    'forceprint': {'after_move': ['filepath']},
-                    ##'logger': logger(),
                 }
 
-            if created or overwrite:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info_dict = ydl.sanitize_info(ydl.extract_info(url))
+            # if created or overwrite:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.sanitize_info(ydl.extract_info(url))
 
+            json_download_location = False
+            playlist_path = None
             for i in info_dict['entries']:
                 if 'requested_downloads' in i and len(i['requested_downloads']):
                     playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
+                    json_download_location = True
                     break
-            playlist_title = os.path.basename(playlist_path)
+
+            if not playlist_path:
+                with yt_dlp.YoutubeDL({ 'skip_download': True, 'ignoreerrors': True, 'clean_infojson': False}) as ydl:
+                    for i in info_dict['entries']:
+                        try:
+                            playlist_path = os.path.dirname(os.path.normpath(ydl.prepare_filename(i)))
+                            break
+                        except:
+                            pass
+
+                playlist_title = os.path.basename(os.path.normpath(playlist_path))
+            else:
+                playlist_title = os.path.basename(playlist_path)
 
             for i in info_dict['entries']:
                 metadata = {'artist': i["uploader"], 'album': info_dict['title'], 'track': i["title"], 'album_artist': i['uploader']}
-                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
-                filepath = os.path.join(playlist_path, filename)
+                if json_download_location:
+                    filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                    filepath = os.path.normpath(i['requested_downloads'][0]["filepath"])
+                else:
+                    filepath = ydl.prepare_filename(i)
+                    filename = os.path.basename(os.path.normpath(filepath))
                 playlist[str(i['playlist_index'])] = {'title': i['title'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]};
+                self.dl_file(i["thumbnail"], filename=F"{ '.'.join(filename.split('.')[:-1]) }.jpg", path=os.path.join(playlist_path, "thumbnails"))
                 try:
                     song = taglib.File(filepath)
                     if playlist[str(i['playlist_index'])]["Metadata"] != None:
@@ -352,13 +394,19 @@ class MusicGetter():
                     self.log.error(F"could not write metadata to {i['title']}")
 
         if extractor == "BandcampAlbum":
-            info_dict = self.infoget(url)
+            info_dict = self.infoget(url, opts = {'forceprint': {'after_move': ['filepath']}, 'outtmpl': filenamefmt})
 
-            for i in info_dict['entries']:
-                if 'requested_downloads' in i and len(i['requested_downloads']):
-                    playlist_path = os.path.dirname(os.path.normpath(i['requested_downloads'][0]["filename"]))
-                    break
-            playlist_title = os.path.basename(playlist_path)
+            playlist_path = None
+
+            with yt_dlp.YoutubeDL({ 'skip_download': True, 'simulate': True, 'ignoreerrors': True, 'clean_infojson': False, 'outtmpl': filenamefmt }) as ydl:
+                for i in info_dict['entries']:
+                    try:
+                        playlist_path = os.path.dirname(os.path.normpath(ydl.prepare_filename(i)))
+                        break
+                    except:
+                        pass
+
+            playlist_title = os.path.basename(os.path.normpath(playlist_path))
 
             formats = dict()
             for i in info_dict["entries"]:
@@ -411,8 +459,14 @@ class MusicGetter():
                     continue
                 if i["artist"] != None: metadata = {'artist': i["artist"], 'album': i["album"], 'track': i["track"], 'album_artist': i["uploader"], "release_year": str( time.strftime('%Y', time.localtime( i["release_timestamp"] )) )};
                 else: metadata = None
-                filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
-                filepath = os.path.join(playlist_path, filename)
+
+                if 'requested_downloads' in i and len(i['requested_downloads']):
+                    filename = os.path.basename(os.path.normpath(i['requested_downloads'][0]["filepath"]))
+                    filepath = os.path.normpath(i['requested_downloads'][0]["filepath"])
+                else:
+                    filepath = ydl.prepare_filename(i)
+                    filename = os.path.basename(os.path.normpath(filepath))
+
                 playlist[str(i['playlist_index'])] = {'title': i['track'], 'filename': filename, 'filepath': filepath, 'Metadata': metadata, 'duration': i["duration"]};
                 if metadata["album"] == None:
                     Albumname = playlist_title
@@ -459,7 +513,8 @@ class MusicGetter():
         self.dump_json(playlist, F"{playlist_title} playlist.json", playlist_path)
         self.dump_json(info_dict, F"{playlist_title} metadata.json", playlist_path)
 
-        self.album_art_folder(os.path.join(path, playlist_title), no_embed = albumart_no_embed)
+        if albumart:
+            self.album_art_folder(playlist_path, no_embed = albumart_no_embed)
 
     
     def view_playlist_metadata(self, playlist_title=False, url=False, path='playlists'):
@@ -570,7 +625,7 @@ def playlist_metadata(obj, playlist_title, url, path, album_art):
         url=False
     if playlist_title == "False":
         playlist_title=False
-    obj.playlist_metadata(playlist_title=playlist_title, url=url, path=path)
+    obj.playlist_metadata(playlist_title=playlist_title, url=url, path=path, album_art=album_art)
 
 @cli.command()
 @click.argument("url")
@@ -579,10 +634,12 @@ def playlist_metadata(obj, playlist_title, url, path, album_art):
 @click.option("-f", "--format", default='mp3', help="eg. mp3, flac, aiff")
 @click.option("--ask-format/--no-ask-format", default=True, help="ask for download format")
 @click.option("-e", "--enum", is_flag=True, help="add position in playlist to filename")
-@click.option("-a", "--album-art", is_flag=True, help="embed album art instead of only downloading it")
+@click.option("-a", "--album-art", is_flag=True, help="Automatically download album art (does not include bandcamp thumbnails)")
+@click.option("-A", "--embed-album-art", is_flag=True, help="Automatically downlads and embeds album art")
 @click.pass_obj
-def yp(obj, url, overwrite, path, format, ask_format, enum: bool, album_art: bool):
-    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum, albumart_no_embed=(not album_art) )
+def yp(obj, url, overwrite, path, format, ask_format, enum: bool, album_art: bool, embed_album_art: bool):
+    obj.yt_playlist_mp3(url, overwrite=overwrite, path=path, format=format, askformat=ask_format, enum=enum, 
+                        albumart=( album_art or embed_album_art ), albumart_no_embed=( not embed_album_art ) )
 
 @cli.command()
 @click.argument("url")
