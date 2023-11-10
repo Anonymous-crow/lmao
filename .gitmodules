@@ -1,0 +1,3 @@
+[submodule "mus_dl"]
+	path = mus_dl
+	url = git@github.com:Anonymous-crow/mus_dl.git

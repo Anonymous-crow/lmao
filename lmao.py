@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-import logging, cv2, random, time, base64, json, youtube_dl, pygame, asyncio, twitchio as tio, shutil, click
-from mus_dl import MusicGetter
+# import logging, cv2, random, time, base64, json, youtube_dl, pygame, asyncio, twitchio as tio, shutil, click
+from mus_dl.mus_dl import MusicGetter
 
 mg = MusicGetter()
 

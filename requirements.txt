@@ -8,11 +8,10 @@ pyunpack
 pygame
 gtts
 curses-menu
-playsound
-youtube-dl
 emoji
 python-dotenv
 twitchio
 eyed3
 pytaglib
 py7zr
+opencv-python
